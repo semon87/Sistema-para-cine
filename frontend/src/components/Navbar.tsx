@@ -1,5 +1,6 @@
+// frontend/src/components/Navbar.tsx
 import React, { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
     AppBar,
     Toolbar,
@@ -14,7 +15,6 @@ import {
     ListItemText,
     Container,
     useTheme,
-    useMediaQuery,
     Menu,
     MenuItem
 } from '@mui/material';
@@ -24,7 +24,7 @@ const Navbar = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [adminMenuAnchor, setAdminMenuAnchor] = useState<null | HTMLElement>(null);
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const navigate = useNavigate();
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
@@ -36,6 +36,12 @@ const Navbar = () => {
 
     const handleAdminMenuClose = () => {
         setAdminMenuAnchor(null);
+    };
+
+    const handleNavigation = (path: string) => {
+        navigate(path);
+        setMobileOpen(false);
+        handleAdminMenuClose();
     };
 
     const navItems = [
@@ -59,8 +65,7 @@ const Navbar = () => {
                     <ListItem key={item.text} disablePadding>
                         <ListItemButton
                             sx={{ textAlign: 'center' }}
-                            component={RouterLink}
-                            to={item.path}
+                            onClick={() => handleNavigation(item.path)}
                         >
                             <ListItemText primary={item.text} />
                         </ListItemButton>
@@ -75,8 +80,7 @@ const Navbar = () => {
                     <ListItem key={item.text} disablePadding sx={{ pl: 2 }}>
                         <ListItemButton
                             sx={{ textAlign: 'center' }}
-                            component={RouterLink}
-                            to={item.path}
+                            onClick={() => handleNavigation(item.path)}
                         >
                             <ListItemText primary={item.text} />
                         </ListItemButton>
@@ -143,9 +147,7 @@ const Navbar = () => {
                                 {adminItems.map((item) => (
                                     <MenuItem
                                         key={item.text}
-                                        onClick={handleAdminMenuClose}
-                                        component={RouterLink}
-                                        to={item.path}
+                                        onClick={() => handleNavigation(item.path)}
                                     >
                                         {item.text}
                                     </MenuItem>
@@ -156,8 +158,9 @@ const Navbar = () => {
                                 color="inherit"
                                 startIcon={<PersonIcon />}
                                 sx={{ ml: 2 }}
+                                onClick={() => handleNavigation('/reservations')}
                             >
-                                Iniciar Sesión
+                                Mis Reservas
                             </Button>
                         </Box>
 

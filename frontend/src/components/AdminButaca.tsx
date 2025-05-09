@@ -1,3 +1,4 @@
+// frontend/src/components/AdminButaca.tsx
 import React, { useState, useEffect } from 'react';
 import {
     Box,
@@ -20,6 +21,7 @@ import {
     IconButton,
     Alert,
     Snackbar,
+    CircularProgress
 } from '@mui/material';
 import {
     Grid,
@@ -37,15 +39,10 @@ import {
     CheckCircle as CheckCircleIcon,
     Cancel as CancelIcon
 } from '@mui/icons-material';
+import { useReservation } from '../context/ReservationContext';
 
-// Tipos para los datos
-interface Room {
-    id: number;
-    name: string;
-    number: number;
-}
-
-interface Seat {
+// Interfaz para butaca
+interface SeatForm {
     id: number;
     number: number;
     rowNumber: number;
@@ -55,13 +52,14 @@ interface Seat {
 }
 
 const AdminButaca = () => {
-    // Estados
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [seats, setSeats] = useState<Seat[]>([]);
+    // Estados del contexto
+    const { rooms, seats, fetchRooms, fetchSeats } = useReservation();
+
+    // Estados locales
     const [selectedRoom, setSelectedRoom] = useState<number | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentSeat, setCurrentSeat] = useState<Seat>({
+    const [currentSeat, setCurrentSeat] = useState<SeatForm>({
         id: 0,
         number: 0,
         rowNumber: 0,
@@ -74,55 +72,49 @@ const AdminButaca = () => {
         message: '',
         severity: 'success' as 'success' | 'error'
     });
+    const [loading, setLoading] = useState(true);
 
-    // Simular carga de datos (en una aplicación real, esto sería una llamada a la API)
+    // Cargar salas al iniciar
     useEffect(() => {
-        // Simular salas
-        const mockRooms: Room[] = [
-            { id: 1, name: 'Sala Normal', number: 1 },
-            { id: 2, name: 'Sala 3D', number: 2 },
-            { id: 3, name: 'Sala VIP', number: 3 },
-        ];
-        setRooms(mockRooms);
-    }, []);
+        const loadRooms = async () => {
+            setLoading(true);
+            if (rooms.length === 0) {
+                await fetchRooms();
+            }
+            setLoading(false);
+        };
+
+        loadRooms();
+    }, [fetchRooms, rooms.length]);
 
     // Cargar asientos cuando cambia la sala seleccionada
     useEffect(() => {
-        if (selectedRoom) {
-            // Simular carga de asientos para la sala seleccionada
-            const mockSeats: Seat[] = [];
+        const loadSeats = async () => {
+            if (selectedRoom) {
+                setLoading(true);
+                await fetchSeats(selectedRoom);
+                setLoading(false);
+            }
+        };
 
-            // Generar filas A-F
-            const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
-
-            // Número de asientos por fila (depende de la sala)
-            const seatsPerRow = selectedRoom === 3 ? 8 : 10;
-
-            rows.forEach((row, rowIndex) => {
-                for (let i = 1; i <= seatsPerRow; i++) {
-                    mockSeats.push({
-                        id: (rowIndex * seatsPerRow) + i,
-                        number: i,
-                        rowNumber: rowIndex + 1,
-                        roomId: selectedRoom,
-                        roomName: rooms.find(r => r.id === selectedRoom)?.name || '',
-                        status: Math.random() > 0.1 // 10% de asientos deshabilitados
-                    });
-                }
-            });
-
-            setSeats(mockSeats);
-        }
-    }, [selectedRoom, rooms]);
+        loadSeats();
+    }, [selectedRoom, fetchSeats]);
 
     // Handlers
     const handleRoomChange = (event: any) => {
         setSelectedRoom(event.target.value as number);
     };
 
-    const handleOpenDialog = (seat?: Seat) => {
+    const handleOpenDialog = (seat?: any) => {
         if (seat) {
-            setCurrentSeat(seat);
+            setCurrentSeat({
+                id: seat.id,
+                number: seat.number,
+                rowNumber: seat.rowNumber,
+                roomId: seat.roomId,
+                roomName: seat.roomName,
+                status: seat.status
+            });
             setIsEditing(true);
         } else {
             setCurrentSeat({
@@ -130,7 +122,7 @@ const AdminButaca = () => {
                 number: 0,
                 rowNumber: 0,
                 roomId: selectedRoom || 0,
-                roomName: '',
+                roomName: rooms.find(r => r.id === selectedRoom)?.name || '',
                 status: true
             });
             setIsEditing(false);
@@ -150,61 +142,99 @@ const AdminButaca = () => {
         });
     };
 
-    const handleSubmit = () => {
-        // En una aplicación real, aquí haríamos una llamada a la API
-        if (isEditing) {
-            // Actualizar asiento existente
-            setSeats(seats.map(seat => seat.id === currentSeat.id ? currentSeat : seat));
+    const handleRoomSelectionChange = (event: any) => {
+        const roomId = event.target.value as number;
+        const selectedRoom = rooms.find(r => r.id === roomId);
+
+        setCurrentSeat({
+            ...currentSeat,
+            roomId,
+            roomName: selectedRoom?.name || ''
+        });
+    };
+
+    const handleSubmit = async () => {
+        try {
+            setLoading(true);
+
+            // En una aplicación real, aquí se enviaría la información a la API
+            const message = isEditing
+                ? 'Butaca actualizada correctamente'
+                : 'Butaca creada correctamente';
+
+            // Simulamos la actualización local
+            // En una aplicación real, después de la respuesta exitosa de la API,
+            // se refrescarían los datos con fetchSeats
+            await new Promise(resolve => setTimeout(resolve, 500)); // Simular retardo de red
+
             setSnackbar({
                 open: true,
-                message: 'Butaca actualizada correctamente',
+                message,
                 severity: 'success'
             });
-        } else {
-            // Crear nuevo asiento
-            const newSeat = {
-                ...currentSeat,
-                id: Math.max(...seats.map(s => s.id), 0) + 1,
-                roomName: rooms.find(r => r.id === currentSeat.roomId)?.name || ''
-            };
-            setSeats([...seats, newSeat]);
+
+            handleCloseDialog();
+        } catch (error) {
+            console.error('Error al guardar la butaca:', error);
             setSnackbar({
                 open: true,
-                message: 'Butaca creada correctamente',
-                severity: 'success'
+                message: 'Error al guardar la butaca',
+                severity: 'error'
             });
+        } finally {
+            setLoading(false);
         }
-        handleCloseDialog();
     };
 
-    const handleDelete = (id: number) => {
-        // En una aplicación real, aquí haríamos una llamada a la API
-        setSeats(seats.filter(seat => seat.id !== id));
-        setSnackbar({
-            open: true,
-            message: 'Butaca eliminada correctamente',
-            severity: 'success'
-        });
+    const handleDelete = async (id: number) => {
+        try {
+            setLoading(true);
+
+            // En una aplicación real, aquí se enviaría la eliminación a la API
+            await new Promise(resolve => setTimeout(resolve, 500)); // Simular retardo de red
+
+            setSnackbar({
+                open: true,
+                message: 'Butaca eliminada correctamente',
+                severity: 'success'
+            });
+        } catch (error) {
+            console.error('Error al eliminar la butaca:', error);
+            setSnackbar({
+                open: true,
+                message: 'Error al eliminar la butaca',
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleToggleStatus = (id: number) => {
-        // En una aplicación real, aquí haríamos una llamada a la API
-        setSeats(seats.map(seat => {
-            if (seat.id === id) {
-                return { ...seat, status: !seat.status };
-            }
-            return seat;
-        }));
+    const handleToggleStatus = async (id: number) => {
+        try {
+            setLoading(true);
 
-        // Determinar si se está habilitando o deshabilitando
-        const targetSeat = seats.find(seat => seat.id === id);
-        const action = targetSeat?.status ? 'deshabilitada' : 'habilitada';
+            // En una aplicación real, aquí se enviaría la actualización a la API
+            const targetSeat = seats.find(seat => seat.id === id);
+            const action = targetSeat?.status ? 'deshabilitada' : 'habilitada';
 
-        setSnackbar({
-            open: true,
-            message: `Butaca ${action} correctamente`,
-            severity: 'success'
-        });
+            await new Promise(resolve => setTimeout(resolve, 500)); // Simular retardo de red
+
+            setSnackbar({
+                open: true,
+                message: `Butaca ${action} correctamente`,
+                severity: 'success'
+            });
+        } catch (error) {
+            console.error('Error al cambiar el estado de la butaca:', error);
+            setSnackbar({
+                open: true,
+                message: 'Error al cambiar el estado de la butaca',
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCloseSnackbar = () => {
@@ -258,65 +288,79 @@ const AdminButaca = () => {
                 </CardContent>
             </Card>
 
-            {/* Tabla de Butacas */}
-            {selectedRoom ? (
-                <TableContainer component={Paper} sx={{ mb: 4 }}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>ID</TableCell>
-                                <TableCell>Fila</TableCell>
-                                <TableCell>Número</TableCell>
-                                <TableCell>Sala</TableCell>
-                                <TableCell>Estado</TableCell>
-                                <TableCell align="center">Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {seats.map((seat) => (
-                                <TableRow key={seat.id}>
-                                    <TableCell>{seat.id}</TableCell>
-                                    <TableCell>{String.fromCharCode(64 + seat.rowNumber)}</TableCell>
-                                    <TableCell>{seat.number}</TableCell>
-                                    <TableCell>{seat.roomName}</TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            {seat.status ? (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', color: 'success.main' }}>
-                                                    <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
-                                                    Activa
-                                                </Box>
-                                            ) : (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', color: 'error.main' }}>
-                                                    <CancelIcon fontSize="small" sx={{ mr: 1 }} />
-                                                    Inactiva
-                                                </Box>
-                                            )}
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        <IconButton color="primary" onClick={() => handleOpenDialog(seat)}>
-                                            <EditIcon />
-                                        </IconButton>
-                                        <IconButton color="error" onClick={() => handleDelete(seat.id)}>
-                                            <DeleteIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            color={seat.status ? "warning" : "success"}
-                                            onClick={() => handleToggleStatus(seat.id)}
-                                        >
-                                            <EventSeatIcon />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+            {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                    <CircularProgress />
+                </Box>
             ) : (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                    Seleccione una sala para ver sus butacas
-                </Alert>
+                <>
+                    {/* Tabla de Butacas */}
+                    {selectedRoom ? (
+                        seats.length > 0 ? (
+                            <TableContainer component={Paper} sx={{ mb: 4 }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>ID</TableCell>
+                                            <TableCell>Fila</TableCell>
+                                            <TableCell>Número</TableCell>
+                                            <TableCell>Sala</TableCell>
+                                            <TableCell>Estado</TableCell>
+                                            <TableCell align="center">Acciones</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {seats.map((seat) => (
+                                            <TableRow key={seat.id}>
+                                                <TableCell>{seat.id}</TableCell>
+                                                <TableCell>{String.fromCharCode(64 + seat.rowNumber)}</TableCell>
+                                                <TableCell>{seat.number}</TableCell>
+                                                <TableCell>{seat.roomId}</TableCell>
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        {seat.status ? (
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', color: 'success.main' }}>
+                                                                <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
+                                                                Activa
+                                                            </Box>
+                                                        ) : (
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', color: 'error.main' }}>
+                                                                <CancelIcon fontSize="small" sx={{ mr: 1 }} />
+                                                                Inactiva
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <IconButton color="primary" onClick={() => handleOpenDialog(seat)}>
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                    <IconButton color="error" onClick={() => handleDelete(seat.id)}>
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        color={seat.status ? "warning" : "success"}
+                                                        onClick={() => handleToggleStatus(seat.id)}
+                                                    >
+                                                        <EventSeatIcon />
+                                                    </IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        ) : (
+                            <Alert severity="info" sx={{ mt: 2 }}>
+                                No hay butacas registradas para esta sala
+                            </Alert>
+                        )
+                    ) : (
+                        <Alert severity="info" sx={{ mt: 2 }}>
+                            Seleccione una sala para ver sus butacas
+                        </Alert>
+                    )}
+                </>
             )}
 
             {/* Formulario de Butaca */}
@@ -355,10 +399,7 @@ const AdminButaca = () => {
                                     name="roomId"
                                     value={currentSeat.roomId || ''}
                                     label="Sala"
-                                    onChange={(e: any) => setCurrentSeat({
-                                        ...currentSeat,
-                                        roomId: e.target.value as number
-                                    })}
+                                    onChange={handleRoomSelectionChange}
                                 >
                                     {rooms.map((room) => (
                                         <MenuItem key={room.id} value={room.id}>
@@ -374,7 +415,17 @@ const AdminButaca = () => {
                     <Button onClick={handleCloseDialog} color="inherit">
                         Cancelar
                     </Button>
-                    <Button onClick={handleSubmit} color="primary" variant="contained">
+                    <Button
+                        onClick={handleSubmit}
+                        color="primary"
+                        variant="contained"
+                        disabled={
+                            !currentSeat.number ||
+                            !currentSeat.rowNumber ||
+                            !currentSeat.roomId ||
+                            loading
+                        }
+                    >
                         {isEditing ? 'Actualizar' : 'Crear'}
                     </Button>
                 </DialogActions>

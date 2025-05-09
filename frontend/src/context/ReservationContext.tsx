@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+// frontend/src/context/ReservationContext.tsx
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 
 // Interfaces
 export interface Movie {
@@ -32,6 +33,7 @@ export interface Billboard {
     movieName: string;
     roomId: number;
     roomName: string;
+    status: boolean; // Agregar esta propiedad
 }
 
 export interface Customer {
@@ -41,6 +43,7 @@ export interface Customer {
     documentNumber: string;
     email: string;
     phoneNumber: string;
+    age: number;
 }
 
 export interface Booking {
@@ -71,6 +74,7 @@ interface ReservationContextState {
 
     // Funciones
     fetchMovies: () => Promise<void>;
+    fetchRooms: () => Promise<void>;
     fetchBillboards: (date?: string) => Promise<void>;
     fetchSeats: (roomId: number) => Promise<void>;
     fetchBookings: (customerId?: number) => Promise<void>;
@@ -102,13 +106,8 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
     const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
 
-    // Cargar datos de ejemplo al iniciar
-    useEffect(() => {
-        fetchMovies();
-    }, []);
-
     // Función para cargar películas
-    const fetchMovies = async (): Promise<void> => {
+    const fetchMovies = useCallback(async (): Promise<void> => {
         // En una aplicación real, esto sería una llamada a la API
         const mockMovies: Movie[] = [
             { id: 1, name: 'Aventuras Cósmicas', genre: 'SCIENCE_FICTION', allowedAge: 12, lengthMinutes: 120 },
@@ -118,62 +117,76 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
             { id: 5, name: 'Risas Aseguradas', genre: 'COMEDY', allowedAge: 7, lengthMinutes: 90 },
             { id: 6, name: 'Terror en la Oscuridad', genre: 'HORROR', allowedAge: 18, lengthMinutes: 105 },
         ];
-        setMovies(mockMovies);
 
-        // También cargar las salas
+        // Simulamos un retardo de red
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        setMovies(mockMovies);
+    }, []);
+
+    // Función para cargar salas
+    const fetchRooms = useCallback(async (): Promise<void> => {
+        // En una aplicación real, esto sería una llamada a la API
         const mockRooms: Room[] = [
             { id: 1, name: 'Sala Normal', number: 1 },
             { id: 2, name: 'Sala 3D', number: 2 },
             { id: 3, name: 'Sala VIP', number: 3 },
         ];
+
+        // Simulamos un retardo de red
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         setRooms(mockRooms);
-    };
+    }, []);
 
     // Función para cargar cartelera
-    const fetchBillboards = async (date?: string): Promise<void> => {
+    const fetchBillboards = useCallback(async (date?: string): Promise<void> => {
         // En una aplicación real, esto sería una llamada a la API con la fecha como parámetro
         const today = date ? new Date(date) : new Date();
 
         const mockBillboards: Billboard[] = [];
-        const movieIds = movies.map(m => m.id);
-        const roomIds = rooms.map(r => r.id);
+        const movieIds = [1, 2, 3, 4, 5, 6];
+        const roomIds = [1, 2, 3];
 
         // Generar carteleras para la fecha especificada
         for (let i = 0; i < 8; i++) {
             const movieId = movieIds[i % movieIds.length];
             const roomId = roomIds[i % roomIds.length];
-            const movie = movies.find(m => m.id === movieId);
-            const room = rooms.find(r => r.id === roomId);
+            const movieName = movies.find(m => m.id === movieId)?.name || `Película ${movieId}`;
+            const roomName = rooms.find(r => r.id === roomId)?.name || `Sala ${roomId}`;
 
-            if (movie && room) {
-                // Diferentes horarios
-                const startTimes = ['14:30', '17:00', '19:30', '22:00'];
-                const startTime = startTimes[i % startTimes.length];
+            // Diferentes horarios
+            const startTimes = ['14:30', '17:00', '19:30', '22:00'];
+            const startTime = startTimes[i % startTimes.length];
 
-                // Calcular hora de fin basada en la duración de la película
-                const [hours, minutes] = startTime.split(':').map(Number);
-                const endHour = hours + Math.floor((minutes + movie.lengthMinutes) / 60);
-                const endMinute = (minutes + movie.lengthMinutes) % 60;
-                const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+            // Calcular hora de fin (estimada)
+            const lengthMinutes = movies.find(m => m.id === movieId)?.lengthMinutes || 120;
+            const [hours, minutes] = startTime.split(':').map(Number);
+            const endHour = hours + Math.floor((minutes + lengthMinutes) / 60);
+            const endMinute = (minutes + lengthMinutes) % 60;
+            const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
 
-                mockBillboards.push({
-                    id: i + 1,
-                    date: today.toISOString().split('T')[0],
-                    startTime,
-                    endTime,
-                    movieId: movie.id,
-                    movieName: movie.name,
-                    roomId: room.id,
-                    roomName: room.name
-                });
-            }
+            mockBillboards.push({
+                id: i + 1,
+                date: today.toISOString().split('T')[0],
+                startTime,
+                endTime,
+                movieId,
+                movieName,
+                roomId,
+                roomName,
+                status: true // Agregar esta propiedad
+            });
         }
 
+        // Simulamos un retardo de red
+        await new Promise(resolve => setTimeout(resolve, 600));
+
         setBillboards(mockBillboards);
-    };
+    }, [movies, rooms]);
 
     // Función para cargar butacas
-    const fetchSeats = async (roomId: number): Promise<void> => {
+    const fetchSeats = useCallback(async (roomId: number): Promise<void> => {
         // En una aplicación real, esto sería una llamada a la API
         const mockSeats: Seat[] = [];
 
@@ -190,11 +203,14 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
             }
         }
 
+        // Simulamos un retardo de red
+        await new Promise(resolve => setTimeout(resolve, 400));
+
         setSeats(mockSeats);
-    };
+    }, []);
 
     // Función para cargar reservas
-    const fetchBookings = async (customerId?: number): Promise<void> => {
+    const fetchBookings = useCallback(async (customerId?: number): Promise<void> => {
         // En una aplicación real, esto sería una llamada a la API
         const mockBookings: Booking[] = [];
 
@@ -206,8 +222,11 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
             const mockCustomerId = customerId || (Math.floor(Math.random() * 3) + 1);
             const mockCustomerName = ['Juan Pérez', 'María González', 'Carlos Rodríguez'][mockCustomerId - 1];
 
-            const mockMovieName = movies[Math.floor(Math.random() * movies.length)]?.name || 'Película Desconocida';
-            const mockRoomName = rooms[Math.floor(Math.random() * rooms.length)]?.name || 'Sala Desconocida';
+            const mockMovieId = Math.floor(Math.random() * 6) + 1;
+            const mockMovieName = movies.find(m => m.id === mockMovieId)?.name || 'Película Desconocida';
+
+            const mockRoomId = Math.floor(Math.random() * 3) + 1;
+            const mockRoomName = rooms.find(r => r.id === mockRoomId)?.name || 'Sala Desconocida';
 
             // Generar una letra de fila (A-F) y un número de asiento (1-10)
             const rowLetter = String.fromCharCode(65 + Math.floor(Math.random() * 6));
@@ -220,36 +239,34 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
                 customerName: mockCustomerName,
                 seatId: (rowLetter.charCodeAt(0) - 65) * 10 + seatNumber,
                 seatLabel: `${rowLetter}${seatNumber}`,
-                billboardId: Math.floor(Math.random() * 10) + 1,
+                billboardId: Math.floor(Math.random() * 8) + 1,
                 movieName: mockMovieName,
                 roomName: mockRoomName,
                 status: Math.random() > 0.2 // 20% de reservas canceladas
             });
         }
 
+        // Simulamos un retardo de red
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         setBookings(mockBookings);
-    };
+    }, [movies, rooms]);
 
     // Función para seleccionar una película
-    const selectMovie = (movie: Movie | null) => {
+    const selectMovie = useCallback((movie: Movie | null) => {
         setSelectedMovie(movie);
         setSelectedBillboard(null); // Reinicia la selección de cartelera
         setSelectedSeats([]); // Reinicia la selección de asientos
-    };
+    }, []);
 
     // Función para seleccionar una cartelera
-    const selectBillboard = (billboard: Billboard | null) => {
+    const selectBillboard = useCallback((billboard: Billboard | null) => {
         setSelectedBillboard(billboard);
         setSelectedSeats([]); // Reinicia la selección de asientos
-
-        // Si se selecciona una cartelera, también carga los asientos de esa sala
-        if (billboard) {
-            fetchSeats(billboard.roomId);
-        }
-    };
+    }, []);
 
     // Función para alternar la selección de un asiento
-    const toggleSeatSelection = (seatId: number) => {
+    const toggleSeatSelection = useCallback((seatId: number) => {
         setSelectedSeats(prevSelectedSeats => {
             if (prevSelectedSeats.includes(seatId)) {
                 return prevSelectedSeats.filter(id => id !== seatId);
@@ -257,15 +274,15 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
                 return [...prevSelectedSeats, seatId];
             }
         });
-    };
+    }, []);
 
     // Función para establecer el cliente actual
-    const setCustomer = (customer: Customer | null) => {
+    const setCustomer = useCallback((customer: Customer | null) => {
         setCurrentCustomer(customer);
-    };
+    }, []);
 
     // Función para crear una reserva
-    const createBooking = async (billboardId: number, seatIds: number[], customerId: number): Promise<number> => {
+    const createBooking = useCallback(async (billboardId: number, seatIds: number[], customerId: number): Promise<number> => {
         // En una aplicación real, esto sería una llamada a la API
         const newBookings: Booking[] = [];
 
@@ -296,6 +313,9 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
             }
         }
 
+        // Simulamos un retardo de red
+        await new Promise(resolve => setTimeout(resolve, 800));
+
         // Actualizar el estado
         setBookings(prevBookings => [...prevBookings, ...newBookings]);
 
@@ -308,12 +328,15 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
 
         // Devolver el ID de la última reserva creada (útil si se crea solo una)
         return bookingId;
-    };
+    }, [billboards, bookings, seats, currentCustomer]);
 
     // Función para cancelar una reserva
-    const cancelBooking = async (bookingId: number): Promise<void> => {
+    const cancelBooking = useCallback(async (bookingId: number): Promise<void> => {
         // En una aplicación real, esto sería una llamada a la API
         const booking = bookings.find(b => b.id === bookingId);
+
+        // Simulamos un retardo de red
+        await new Promise(resolve => setTimeout(resolve, 600));
 
         if (booking) {
             // Actualizar el estado de la reserva
@@ -330,7 +353,13 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
                 )
             );
         }
-    };
+    }, [bookings]);
+
+    // Cargar datos iniciales
+    useEffect(() => {
+        fetchMovies();
+        fetchRooms();
+    }, [fetchMovies, fetchRooms]);
 
     // Valor del contexto
     const contextValue: ReservationContextState = {
@@ -344,6 +373,7 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
         selectedSeats,
         currentCustomer,
         fetchMovies,
+        fetchRooms,
         fetchBillboards,
         fetchSeats,
         fetchBookings,

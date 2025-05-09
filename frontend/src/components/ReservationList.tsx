@@ -1,3 +1,4 @@
+// frontend/src/components/ReservationList.tsx
 import React, { useState, useEffect } from 'react';
 import {
     Box,
@@ -25,7 +26,8 @@ import {
     List,
     ListItem,
     ListItemText,
-    ListItemIcon
+    ListItemIcon,
+    CircularProgress
 } from '@mui/material';
 import {
     Grid,
@@ -51,35 +53,13 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
-
-// Tipos para los datos
-interface Customer {
-    id: number;
-    name: string;
-    lastname: string;
-    documentNumber: string;
-    email: string;
-    phoneNumber: string;
-}
-
-interface Reservation {
-    id: number;
-    date: Date;
-    customerId: number;
-    customerName: string;
-    seatId: number;
-    seatLabel: string;
-    billboardId: number;
-    movieName: string;
-    roomName: string;
-    status: boolean;
-}
+import { useReservation } from '../context/ReservationContext';
 
 const ReservationList = () => {
     // Estados
-    const [reservations, setReservations] = useState<Reservation[]>([]);
-    const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([]);
-    const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+    const { bookings, fetchBookings, cancelBooking } = useReservation();
+    const [filteredBookings, setFilteredBookings] = useState(bookings);
+    const [selectedReservation, setSelectedReservation] = useState<any | null>(null);
     const [openDetailDialog, setOpenDetailDialog] = useState(false);
     const [confirmDialog, setConfirmDialog] = useState({
         open: false,
@@ -100,95 +80,67 @@ const ReservationList = () => {
         customer: ''
     });
     const [openFilterDialog, setOpenFilterDialog] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    // Simular carga de datos (en una aplicación real, esto sería una llamada a la API)
+    // Cargar reservas al inicio
     useEffect(() => {
-        // Simular reservas
-        const mockReservations: Reservation[] = [];
-        const mockCustomers: Customer[] = [
-            { id: 1, name: 'Juan', lastname: 'Pérez', documentNumber: '123456789', email: 'juan@example.com', phoneNumber: '555-123-4567' },
-            { id: 2, name: 'María', lastname: 'González', documentNumber: '987654321', email: 'maria@example.com', phoneNumber: '555-987-6543' },
-            { id: 3, name: 'Carlos', lastname: 'Rodríguez', documentNumber: '456789123', email: 'carlos@example.com', phoneNumber: '555-456-7891' },
-        ];
-        const mockMovies = ['Aventuras Cósmicas', 'El Misterio del Bosque', 'Amor en París', 'Superhéroes Unidos', 'Risas Aseguradas'];
-        const mockRooms = ['Sala 1 - Normal', 'Sala 2 - 3D', 'Sala 3 - VIP'];
+        const loadBookings = async () => {
+            setLoading(true);
+            await fetchBookings();
+            setLoading(false);
+        };
 
-        // Generar 20 reservas de ejemplo
-        for (let i = 1; i <= 20; i++) {
-            // Fecha aleatoria en los últimos 14 días
-            const date = new Date();
-            date.setDate(date.getDate() - Math.floor(Math.random() * 14));
+        loadBookings();
+    }, [fetchBookings]);
 
-            // Cliente aleatorio
-            const customer = mockCustomers[Math.floor(Math.random() * mockCustomers.length)];
-
-            // Película aleatoria
-            const movie = mockMovies[Math.floor(Math.random() * mockMovies.length)];
-
-            // Sala aleatoria
-            const room = mockRooms[Math.floor(Math.random() * mockRooms.length)];
-
-            // Fila (A-F) y número de asiento (1-10) aleatorios
-            const row = String.fromCharCode(65 + Math.floor(Math.random() * 6));
-            const seatNumber = Math.floor(Math.random() * 10) + 1;
-
-            mockReservations.push({
-                id: i,
-                date: date,
-                customerId: customer.id,
-                customerName: `${customer.name} ${customer.lastname}`,
-                seatId: (row.charCodeAt(0) - 65) * 10 + seatNumber,
-                seatLabel: `${row}${seatNumber}`,
-                billboardId: Math.floor(Math.random() * 100) + 1,
-                movieName: movie,
-                roomName: room,
-                status: Math.random() > 0.2 // 20% de reservas canceladas
-            });
-        }
-
-        setReservations(mockReservations);
-        setFilteredReservations(mockReservations);
-    }, []);
+    // Actualizar las reservas filtradas cuando cambien las reservas o los filtros
+    useEffect(() => {
+        setFilteredBookings(bookings);
+    }, [bookings]);
 
     // Aplicar filtros
     const applyFilters = () => {
-        let filtered = [...reservations];
+        let filtered = [...bookings];
 
         // Filtro por película
         if (filters.movie) {
-            filtered = filtered.filter(reservation =>
-                reservation.movieName.toLowerCase().includes(filters.movie.toLowerCase())
+            filtered = filtered.filter(booking =>
+                booking.movieName.toLowerCase().includes(filters.movie.toLowerCase())
             );
         }
 
         // Filtro por estado
         if (filters.status !== 'all') {
             const isActive = filters.status === 'active';
-            filtered = filtered.filter(reservation => reservation.status === isActive);
+            filtered = filtered.filter(booking => booking.status === isActive);
         }
 
         // Filtro por fecha de inicio
         if (filters.startDate) {
-            filtered = filtered.filter(reservation =>
-                new Date(reservation.date) >= new Date(filters.startDate!)
-            );
+            filtered = filtered.filter(booking => {
+                const bookingDate = new Date(booking.date);
+                const startDate = new Date(filters.startDate!);
+                return bookingDate >= startDate;
+            });
         }
 
         // Filtro por fecha de fin
         if (filters.endDate) {
-            filtered = filtered.filter(reservation =>
-                new Date(reservation.date) <= new Date(filters.endDate!)
-            );
+            filtered = filtered.filter(booking => {
+                const bookingDate = new Date(booking.date);
+                const endDate = new Date(filters.endDate!);
+                return bookingDate <= endDate;
+            });
         }
 
         // Filtro por cliente
         if (filters.customer) {
-            filtered = filtered.filter(reservation =>
-                reservation.customerName.toLowerCase().includes(filters.customer.toLowerCase())
+            filtered = filtered.filter(booking =>
+                booking.customerName.toLowerCase().includes(filters.customer.toLowerCase())
             );
         }
 
-        setFilteredReservations(filtered);
+        setFilteredBookings(filtered);
         setOpenFilterDialog(false);
     };
 
@@ -201,12 +153,12 @@ const ReservationList = () => {
             endDate: null,
             customer: ''
         });
-        setFilteredReservations(reservations);
+        setFilteredBookings(bookings);
         setOpenFilterDialog(false);
     };
 
     // Handlers
-    const handleOpenDetailDialog = (reservation: Reservation) => {
+    const handleOpenDetailDialog = (reservation: any) => {
         setSelectedReservation(reservation);
         setOpenDetailDialog(true);
     };
@@ -231,37 +183,35 @@ const ReservationList = () => {
         });
     };
 
-    const handleConfirmCancel = () => {
-        // En una aplicación real, aquí haríamos una llamada a la API
-        setReservations(reservations.map(reservation => {
-            if (reservation.id === confirmDialog.id) {
-                return { ...reservation, status: false };
-            }
-            return reservation;
-        }));
+    const handleConfirmCancel = async () => {
+        try {
+            setLoading(true);
+            await cancelBooking(confirmDialog.id);
 
-        // También actualizar las reservas filtradas
-        setFilteredReservations(filteredReservations.map(reservation => {
-            if (reservation.id === confirmDialog.id) {
-                return { ...reservation, status: false };
-            }
-            return reservation;
-        }));
+            setSnackbar({
+                open: true,
+                message: 'Reserva cancelada correctamente',
+                severity: 'success'
+            });
 
-        setSnackbar({
-            open: true,
-            message: 'Reserva cancelada correctamente',
-            severity: 'success'
-        });
-
-        handleCloseCancelDialog();
+            handleCloseCancelDialog();
+        } catch (error) {
+            console.error('Error al cancelar la reserva:', error);
+            setSnackbar({
+                open: true,
+                message: 'Error al cancelar la reserva',
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    const formatDate = (date: Date) => {
+    const formatDate = (date: string) => {
         return new Date(date).toLocaleDateString('es-ES', {
             year: 'numeric',
             month: 'long',
@@ -286,59 +236,67 @@ const ReservationList = () => {
                     </Button>
                 </Box>
 
-                {/* Tabla de Reservas */}
-                {filteredReservations.length > 0 ? (
-                    <TableContainer component={Paper}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>ID</TableCell>
-                                    <TableCell>Fecha</TableCell>
-                                    <TableCell>Cliente</TableCell>
-                                    <TableCell>Película</TableCell>
-                                    <TableCell>Sala</TableCell>
-                                    <TableCell>Butaca</TableCell>
-                                    <TableCell>Estado</TableCell>
-                                    <TableCell align="center">Acciones</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredReservations.map((reservation) => (
-                                    <TableRow key={reservation.id} sx={{
-                                        backgroundColor: reservation.status ? 'inherit' : 'rgba(239, 83, 80, 0.1)'
-                                    }}>
-                                        <TableCell>{reservation.id}</TableCell>
-                                        <TableCell>{formatDate(reservation.date)}</TableCell>
-                                        <TableCell>{reservation.customerName}</TableCell>
-                                        <TableCell>{reservation.movieName}</TableCell>
-                                        <TableCell>{reservation.roomName}</TableCell>
-                                        <TableCell>{reservation.seatLabel}</TableCell>
-                                        <TableCell>
-                                            {reservation.status ? (
-                                                <Chip label="Activa" color="success" size="small" />
-                                            ) : (
-                                                <Chip label="Cancelada" color="error" size="small" />
-                                            )}
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <IconButton color="primary" onClick={() => handleOpenDetailDialog(reservation)}>
-                                                <VisibilityIcon />
-                                            </IconButton>
-                                            {reservation.status && (
-                                                <IconButton color="error" onClick={() => handleOpenCancelDialog(reservation.id)}>
-                                                    <CancelIcon />
-                                                </IconButton>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                {loading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                        <CircularProgress />
+                    </Box>
                 ) : (
-                    <Alert severity="info">
-                        No se encontraron reservas con los criterios seleccionados
-                    </Alert>
+                    <>
+                        {/* Tabla de Reservas */}
+                        {filteredBookings.length > 0 ? (
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>ID</TableCell>
+                                            <TableCell>Fecha</TableCell>
+                                            <TableCell>Cliente</TableCell>
+                                            <TableCell>Película</TableCell>
+                                            <TableCell>Sala</TableCell>
+                                            <TableCell>Butaca</TableCell>
+                                            <TableCell>Estado</TableCell>
+                                            <TableCell align="center">Acciones</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {filteredBookings.map((booking) => (
+                                            <TableRow key={booking.id} sx={{
+                                                backgroundColor: booking.status ? 'inherit' : 'rgba(239, 83, 80, 0.1)'
+                                            }}>
+                                                <TableCell>{booking.id}</TableCell>
+                                                <TableCell>{formatDate(booking.date)}</TableCell>
+                                                <TableCell>{booking.customerName}</TableCell>
+                                                <TableCell>{booking.movieName}</TableCell>
+                                                <TableCell>{booking.roomName}</TableCell>
+                                                <TableCell>{booking.seatLabel}</TableCell>
+                                                <TableCell>
+                                                    {booking.status ? (
+                                                        <Chip label="Activa" color="success" size="small" />
+                                                    ) : (
+                                                        <Chip label="Cancelada" color="error" size="small" />
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <IconButton color="primary" onClick={() => handleOpenDetailDialog(booking)}>
+                                                        <VisibilityIcon />
+                                                    </IconButton>
+                                                    {booking.status && (
+                                                        <IconButton color="error" onClick={() => handleOpenCancelDialog(booking.id)}>
+                                                            <CancelIcon />
+                                                        </IconButton>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        ) : (
+                            <Alert severity="info">
+                                No se encontraron reservas con los criterios seleccionados
+                            </Alert>
+                        )}
+                    </>
                 )}
 
                 {/* Diálogo de Detalles */}
@@ -474,7 +432,7 @@ const ReservationList = () => {
                                         labelId="status-select-label"
                                         value={filters.status}
                                         label="Estado"
-                                        onChange={(e: React.ChangeEvent<{ value: unknown }>) => setFilters({ ...filters, status: e.target.value as string })}
+                                        onChange={(e: any) => setFilters({ ...filters, status: e.target.value })}
                                     >
                                         <MenuItem value="all">Todos</MenuItem>
                                         <MenuItem value="active">Activas</MenuItem>
@@ -524,6 +482,27 @@ const ReservationList = () => {
                     </DialogActions>
                 </Dialog>
 
+                {/* Diálogo de Confirmación */}
+                <Dialog open={confirmDialog.open} onClose={handleCloseCancelDialog}>
+                    <DialogTitle>{confirmDialog.title}</DialogTitle>
+                    <DialogContent>
+                        <Typography>{confirmDialog.message}</Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseCancelDialog} color="inherit">
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={handleConfirmCancel}
+                            color="error"
+                            variant="contained"
+                            disabled={loading}
+                        >
+                            Confirmar
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
                 {/* Notificación */}
                 <Snackbar
                     open={snackbar.open}
@@ -541,4 +520,3 @@ const ReservationList = () => {
 };
 
 export default ReservationList;
-

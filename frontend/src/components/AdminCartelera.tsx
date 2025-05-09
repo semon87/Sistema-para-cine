@@ -1,3 +1,4 @@
+// frontend/src/components/AdminCartelera.tsx
 import React, { useState, useEffect } from 'react';
 import {
     Box,
@@ -21,7 +22,8 @@ import {
     Alert,
     Snackbar,
     Chip,
-    Divider
+    Divider,
+    CircularProgress
 } from '@mui/material';
 import {
     Grid,
@@ -46,40 +48,21 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
-
-// Tipos para los datos
-interface Movie {
-    id: number;
-    name: string;
-    genre: string;
-    allowedAge: number;
-    lengthMinutes: number;
-}
-
-interface Room {
-    id: number;
-    name: string;
-    number: number;
-}
-
-interface Billboard {
-    id: number;
-    date: Date;
-    startTime: string;
-    endTime: string;
-    movieId: number;
-    movieName: string;
-    roomId: number;
-    roomName: string;
-    status: boolean;
-}
+import { useReservation } from '../context/ReservationContext';
 
 const AdminCartelera = () => {
-    // Estados
-    const [movies, setMovies] = useState<Movie[]>([]);
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [billboards, setBillboards] = useState<Billboard[]>([]);
-    const [filteredBillboards, setFilteredBillboards] = useState<Billboard[]>([]);
+    // Estados del contexto
+    const {
+        movies,
+        rooms,
+        billboards,
+        fetchMovies,
+        fetchRooms,
+        fetchBillboards
+    } = useReservation();
+
+    // Estados locales
+    const [filteredBillboards, setFilteredBillboards] = useState(billboards);
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [filterDate, setFilterDate] = useState<Date | null>(new Date());
@@ -89,7 +72,7 @@ const AdminCartelera = () => {
         message: '',
         id: 0
     });
-    const [currentBillboard, setCurrentBillboard] = useState<Billboard>({
+    const [currentBillboard, setCurrentBillboard] = useState({
         id: 0,
         date: new Date(),
         startTime: '18:00',
@@ -105,67 +88,34 @@ const AdminCartelera = () => {
         message: '',
         severity: 'success' as 'success' | 'error'
     });
+    const [loading, setLoading] = useState(true);
 
-    // Simular carga de datos (en una aplicación real, esto sería una llamada a la API)
+    // Cargar datos iniciales
     useEffect(() => {
-        // Simular películas
-        const mockMovies: Movie[] = [
-            { id: 1, name: 'Aventuras Cósmicas', genre: 'SCIENCE_FICTION', allowedAge: 12, lengthMinutes: 120 },
-            { id: 2, name: 'El Misterio del Bosque', genre: 'THRILLER', allowedAge: 16, lengthMinutes: 95 },
-            { id: 3, name: 'Amor en París', genre: 'ROMANCE', allowedAge: 12, lengthMinutes: 110 },
-            { id: 4, name: 'Superhéroes Unidos', genre: 'ACTION', allowedAge: 12, lengthMinutes: 140 },
-            { id: 5, name: 'Risas Aseguradas', genre: 'COMEDY', allowedAge: 7, lengthMinutes: 90 },
-            { id: 6, name: 'Terror en la Oscuridad', genre: 'HORROR', allowedAge: 18, lengthMinutes: 105 },
-        ];
-        setMovies(mockMovies);
+        const loadData = async () => {
+            setLoading(true);
 
-        // Simular salas
-        const mockRooms: Room[] = [
-            { id: 1, name: 'Sala Normal', number: 1 },
-            { id: 2, name: 'Sala 3D', number: 2 },
-            { id: 3, name: 'Sala VIP', number: 3 },
-        ];
-        setRooms(mockRooms);
+            // Cargar películas si no están cargadas
+            if (movies.length === 0) {
+                await fetchMovies();
+            }
 
-        // Simular cartelera
-        const mockBillboards: Billboard[] = [];
-        const today = new Date();
+            // Cargar salas si no están cargadas
+            if (rooms.length === 0) {
+                await fetchRooms();
+            }
 
-        // Generar carteleras para los próximos 7 días
-        for (let i = 0; i < 7; i++) {
-            const date = new Date();
-            date.setDate(today.getDate() + i);
+            // Cargar cartelera para la fecha actual
+            if (filterDate) {
+                const dateString = filterDate.toISOString().split('T')[0];
+                await fetchBillboards(dateString);
+            }
 
-            // Varias funciones por día
-            mockRooms.forEach(room => {
-                mockMovies.slice(0, 3).forEach((movie, index) => {
-                    // Horas de inicio para diferentes funciones
-                    const startTimes = ['14:30', '17:00', '19:30', '22:00'];
-                    const startTime = startTimes[index % startTimes.length];
+            setLoading(false);
+        };
 
-                    // Calcular hora de fin basada en la duración de la película
-                    const [hours, minutes] = startTime.split(':').map(Number);
-                    const endHour = hours + Math.floor((minutes + movie.lengthMinutes) / 60);
-                    const endMinute = (minutes + movie.lengthMinutes) % 60;
-                    const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
-
-                    mockBillboards.push({
-                        id: mockBillboards.length + 1,
-                        date: new Date(date),
-                        startTime,
-                        endTime,
-                        movieId: movie.id,
-                        movieName: movie.name,
-                        roomId: room.id,
-                        roomName: room.name,
-                        status: Math.random() > 0.05 // 5% de carteleras canceladas
-                    });
-                });
-            });
-        }
-
-        setBillboards(mockBillboards);
-    }, []);
+        loadData();
+    }, [fetchMovies, fetchRooms, fetchBillboards, movies.length, rooms.length]);
 
     // Filtrar carteleras por fecha
     useEffect(() => {
@@ -181,7 +131,7 @@ const AdminCartelera = () => {
     }, [billboards, filterDate]);
 
     // Handlers
-    const handleOpenDialog = (billboard?: Billboard) => {
+    const handleOpenDialog = (billboard?: any) => {
         if (billboard) {
             setCurrentBillboard(billboard);
             setIsEditing(true);
@@ -206,7 +156,7 @@ const AdminCartelera = () => {
         setOpenDialog(false);
     };
 
-    const handleMovieChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    const handleMovieChange = (event: any) => {
         const movieId = event.target.value as number;
         const selectedMovie = movies.find(m => m.id === movieId);
 
@@ -232,7 +182,7 @@ const AdminCartelera = () => {
         }
     };
 
-    const handleRoomChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    const handleRoomChange = (event: any) => {
         const roomId = event.target.value as number;
         const selectedRoom = rooms.find(r => r.id === roomId);
 
@@ -252,7 +202,8 @@ const AdminCartelera = () => {
         }
     };
 
-    const handleStartTimeChange = (value: string) => {
+    const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
         const selectedMovie = movies.find(m => m.id === currentBillboard.movieId);
         let endTime = currentBillboard.endTime;
 
@@ -271,47 +222,113 @@ const AdminCartelera = () => {
         });
     };
 
-    const handleEndTimeChange = (value: string) => {
+    const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCurrentBillboard({
             ...currentBillboard,
-            endTime: value
+            endTime: e.target.value
         });
     };
 
-    const handleSubmit = () => {
-        // En una aplicación real, aquí haríamos una llamada a la API
-        if (isEditing) {
-            // Actualizar cartelera existente
-            setBillboards(billboards.map(billboard =>
-                billboard.id === currentBillboard.id ? currentBillboard : billboard
-            ));
-            setSnackbar({
-                open: true,
-                message: 'Cartelera actualizada correctamente',
-                severity: 'success'
-            });
-        } else {
-            // Crear nueva cartelera
-            const newBillboard = {
-                ...currentBillboard,
-                id: Math.max(...billboards.map(b => b.id), 0) + 1
-            };
-            setBillboards([...billboards, newBillboard]);
-            setSnackbar({
-                open: true,
-                message: 'Cartelera creada correctamente',
-                severity: 'success'
-            });
+    const handleFilterDateChange = async (date: Date | null) => {
+        setFilterDate(date);
+        if (date) {
+            const dateString = date.toISOString().split('T')[0];
+            await fetchBillboards(dateString);
         }
-        handleCloseDialog();
     };
 
+    const handleSubmit = async () => {
+        try {
+            setLoading(true);
+
+            // Convertir Date a string ISO (YYYY-MM-DD)
+            const formattedBillboard = {
+                ...currentBillboard,
+                date: currentBillboard.date instanceof Date
+                    ? currentBillboard.date.toISOString().split('T')[0]
+                    : currentBillboard.date
+            };
+
+            const message = isEditing ? 'Cartelera actualizada correctamente' : 'Cartelera creada correctamente';
+
+            if (isEditing) {
+                // Actualizar cartelera existente
+                const updated = billboards.map(billboard =>
+                    billboard.id === formattedBillboard.id ? formattedBillboard : billboard
+                );
+
+                setFilteredBillboards(updated.filter(billboard => {
+                    const billboardDate = new Date(billboard.date);
+                    return filterDate && billboardDate.setHours(0, 0, 0, 0) === new Date(filterDate).setHours(0, 0, 0, 0);
+                }));
+            } else {
+                // Crear nueva cartelera
+                const newId = Math.max(...billboards.map(b => b.id), 0) + 1;
+                const newBillboard = { ...formattedBillboard, id: newId };
+
+                const updated = [...billboards, newBillboard];
+
+                setFilteredBillboards(updated.filter(billboard => {
+                    const billboardDate = new Date(billboard.date);
+                    return filterDate && billboardDate.setHours(0, 0, 0, 0) === new Date(filterDate).setHours(0, 0, 0, 0);
+                }));
+            }
+
+            setSnackbar({
+                open: true,
+                message,
+                severity: 'success'
+            });
+
+            handleCloseDialog();
+        } catch (error) {
+            console.error('Error al guardar la cartelera:', error);
+            setSnackbar({
+                open: true,
+                message: 'Error al guardar la cartelera',
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
     const handleDelete = (id: number) => {
-        // En una aplicación real, aquí haríamos una llamada a la API
-        setBillboards(billboards.filter(billboard => billboard.id !== id));
+        // En una aplicación real, aquí se enviaría la eliminación a la API
+        const updated = billboards.filter(billboard => billboard.id !== id);
+
+        // Actualizar la lista filtrada
+        setFilteredBillboards(updated.filter(billboard => {
+            const billboardDate = new Date(billboard.date);
+            return filterDate && billboardDate.setHours(0, 0, 0, 0) === new Date(filterDate).setHours(0, 0, 0, 0);
+        }));
+
         setSnackbar({
             open: true,
             message: 'Cartelera eliminada correctamente',
+            severity: 'success'
+        });
+    };
+
+    const handleCancelBillboard = (id: number) => {
+        // En una aplicación real, aquí se enviaría la cancelación a la API
+        const updated = billboards.map(billboard => {
+            if (billboard.id === id) {
+                return { ...billboard, status: false };
+            }
+            return billboard;
+        });
+
+        // Actualizar la lista filtrada
+        setFilteredBillboards(updated.filter(billboard => {
+            const billboardDate = new Date(billboard.date);
+            return filterDate && billboardDate.setHours(0, 0, 0, 0) === new Date(filterDate).setHours(0, 0, 0, 0);
+        }));
+
+        setSnackbar({
+            open: true,
+            message: 'Función cancelada correctamente',
             severity: 'success'
         });
     };
@@ -339,25 +356,10 @@ const AdminCartelera = () => {
 
     const handleConfirmAction = () => {
         // Determinar si es eliminar o cancelar
-        const billboardToModify = billboards.find(b => b.id === confirmDialog.id);
-
-        if (billboardToModify) {
-            if (confirmDialog.title.includes('Eliminar')) {
-                handleDelete(confirmDialog.id);
-            } else {
-                // Cancelar función
-                setBillboards(billboards.map(billboard => {
-                    if (billboard.id === confirmDialog.id) {
-                        return { ...billboard, status: false };
-                    }
-                    return billboard;
-                }));
-                setSnackbar({
-                    open: true,
-                    message: 'Función cancelada correctamente',
-                    severity: 'success'
-                });
-            }
+        if (confirmDialog.title.includes('Eliminar')) {
+            handleDelete(confirmDialog.id);
+        } else {
+            handleCancelBillboard(confirmDialog.id);
         }
 
         handleCloseConfirmDialog();
@@ -367,7 +369,7 @@ const AdminCartelera = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    const formatDate = (date: Date) => {
+    const formatDate = (date: Date | string) => {
         return new Date(date).toLocaleDateString('es-ES', {
             year: 'numeric',
             month: 'long',
@@ -390,7 +392,7 @@ const AdminCartelera = () => {
                                 <DatePicker
                                     label="Filtrar por Fecha"
                                     value={filterDate}
-                                    onChange={(newDate) => setFilterDate(newDate)}
+                                    onChange={handleFilterDateChange}
                                     format="dd/MM/yyyy"
                                     slotProps={{
                                         textField: {
@@ -425,68 +427,76 @@ const AdminCartelera = () => {
                     </Box>
                 )}
 
-                {/* Tabla de Cartelera */}
-                {filteredBillboards.length > 0 ? (
-                    <TableContainer component={Paper}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>ID</TableCell>
-                                    <TableCell>Película</TableCell>
-                                    <TableCell>Sala</TableCell>
-                                    <TableCell>Horario</TableCell>
-                                    <TableCell>Estado</TableCell>
-                                    <TableCell align="center">Acciones</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredBillboards.map((billboard) => (
-                                    <TableRow key={billboard.id} sx={{
-                                        backgroundColor: billboard.status ? 'inherit' : 'rgba(239, 83, 80, 0.1)'
-                                    }}>
-                                        <TableCell>{billboard.id}</TableCell>
-                                        <TableCell>{billboard.movieName}</TableCell>
-                                        <TableCell>{billboard.roomName}</TableCell>
-                                        <TableCell>{`${billboard.startTime} - ${billboard.endTime}`}</TableCell>
-                                        <TableCell>
-                                            {billboard.status ? (
-                                                <Chip label="Activa" color="success" size="small" />
-                                            ) : (
-                                                <Chip label="Cancelada" color="error" size="small" />
-                                            )}
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <IconButton
-                                                color="primary"
-                                                onClick={() => handleOpenDialog(billboard)}
-                                                disabled={!billboard.status}
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                            <IconButton
-                                                color="error"
-                                                onClick={() => handleOpenConfirmDialog(billboard.id, 'delete')}
-                                            >
-                                                <DeleteIcon />
-                                            </IconButton>
-                                            {billboard.status && (
-                                                <IconButton
-                                                    color="warning"
-                                                    onClick={() => handleOpenConfirmDialog(billboard.id, 'cancel')}
-                                                >
-                                                    <CancelIcon />
-                                                </IconButton>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                {loading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                        <CircularProgress />
+                    </Box>
                 ) : (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                        No hay funciones programadas para esta fecha
-                    </Alert>
+                    <>
+                        {/* Tabla de Cartelera */}
+                        {filteredBillboards.length > 0 ? (
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>ID</TableCell>
+                                            <TableCell>Película</TableCell>
+                                            <TableCell>Sala</TableCell>
+                                            <TableCell>Horario</TableCell>
+                                            <TableCell>Estado</TableCell>
+                                            <TableCell align="center">Acciones</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {filteredBillboards.map((billboard) => (
+                                            <TableRow key={billboard.id} sx={{
+                                                backgroundColor: billboard.status ? 'inherit' : 'rgba(239, 83, 80, 0.1)'
+                                            }}>
+                                                <TableCell>{billboard.id}</TableCell>
+                                                <TableCell>{billboard.movieName}</TableCell>
+                                                <TableCell>{billboard.roomName}</TableCell>
+                                                <TableCell>{`${billboard.startTime} - ${billboard.endTime}`}</TableCell>
+                                                <TableCell>
+                                                    {billboard.status ? (
+                                                        <Chip label="Activa" color="success" size="small" />
+                                                    ) : (
+                                                        <Chip label="Cancelada" color="error" size="small" />
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <IconButton
+                                                        color="primary"
+                                                        onClick={() => handleOpenDialog(billboard)}
+                                                        disabled={!billboard.status}
+                                                    >
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        color="error"
+                                                        onClick={() => handleOpenConfirmDialog(billboard.id, 'delete')}
+                                                    >
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                    {billboard.status && (
+                                                        <IconButton
+                                                            color="warning"
+                                                            onClick={() => handleOpenConfirmDialog(billboard.id, 'cancel')}
+                                                        >
+                                                            <CancelIcon />
+                                                        </IconButton>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        ) : (
+                            <Alert severity="info" sx={{ mt: 2 }}>
+                                No hay funciones programadas para esta fecha
+                            </Alert>
+                        )}
+                    </>
                 )}
 
                 {/* Formulario de Cartelera */}
@@ -559,7 +569,7 @@ const AdminCartelera = () => {
                                             label="Hora de Inicio"
                                             type="time"
                                             value={currentBillboard.startTime}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleStartTimeChange(e.target.value)}
+                                            onChange={handleStartTimeChange}
                                             InputLabelProps={{ shrink: true }}
                                             inputProps={{ step: 300 }}
                                         />
@@ -570,7 +580,7 @@ const AdminCartelera = () => {
                                             label="Hora de Fin"
                                             type="time"
                                             value={currentBillboard.endTime}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleEndTimeChange(e.target.value)}
+                                            onChange={handleEndTimeChange}
                                             InputLabelProps={{ shrink: true }}
                                             inputProps={{ step: 300 }}
                                             disabled={!!currentBillboard.movieId}
@@ -629,7 +639,7 @@ const AdminCartelera = () => {
                             onClick={handleSubmit}
                             color="primary"
                             variant="contained"
-                            disabled={!currentBillboard.movieId || !currentBillboard.roomId}
+                            disabled={!currentBillboard.movieId || !currentBillboard.roomId || loading}
                         >
                             {isEditing ? 'Actualizar' : 'Crear'}
                         </Button>
@@ -646,7 +656,12 @@ const AdminCartelera = () => {
                         <Button onClick={handleCloseConfirmDialog} color="inherit">
                             Cancelar
                         </Button>
-                        <Button onClick={handleConfirmAction} color="error" variant="contained">
+                        <Button
+                            onClick={handleConfirmAction}
+                            color="error"
+                            variant="contained"
+                            disabled={loading}
+                        >
                             Confirmar
                         </Button>
                     </DialogActions>

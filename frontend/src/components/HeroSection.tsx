@@ -1,4 +1,6 @@
+// frontend/src/components/HeroSection.tsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -7,10 +9,22 @@ import {
 } from '@mui/material';
 
 const HeroSection = () => {
+    const navigate = useNavigate();
+
+    const handleBrowseMovies = () => {
+        // Navegar a la sección de películas o desplazarse suavemente si ya estamos en la página principal
+        const moviesSection = document.getElementById('peliculas');
+        if (moviesSection) {
+            moviesSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            navigate('/#peliculas');
+        }
+    };
+
     return (
         <Box
             sx={{
-                backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("/api/placeholder/1200/600")',
+                backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200&auto=format&fit=crop")',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
                 backgroundSize: 'cover',
@@ -30,7 +44,7 @@ const HeroSection = () => {
                         mb: 3
                     }}
                 >
-                    Sistema de Reserva de Cine
+                    CineReservas
                 </Typography>
                 <Typography
                     variant="h6"
@@ -48,6 +62,7 @@ const HeroSection = () => {
                     variant="contained"
                     color="secondary"
                     size="large"
+                    onClick={handleBrowseMovies}
                     sx={{
                         px: 4,
                         py: 1.5,
