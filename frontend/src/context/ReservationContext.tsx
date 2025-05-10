@@ -108,15 +108,25 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
 
     // Cargar datos del localStorage al inicio
     useEffect(() => {
+        // Cargar reservas del localStorage
         const savedBookings = localStorage.getItem('cinereservas_bookings');
         if (savedBookings) {
-            setBookings(JSON.parse(savedBookings));
+            try {
+                const parsedBookings = JSON.parse(savedBookings);
+                if (Array.isArray(parsedBookings) && parsedBookings.length > 0) {
+                    setBookings(parsedBookings);
+                }
+            } catch (error) {
+                console.error('Error al parsear las reservas guardadas:', error);
+            }
         }
     }, []);
 
     // Guardar reservas en localStorage cuando cambien
     useEffect(() => {
-        localStorage.setItem('cinereservas_bookings', JSON.stringify(bookings));
+        if (bookings.length > 0) {
+            localStorage.setItem('cinereservas_bookings', JSON.stringify(bookings));
+        }
     }, [bookings]);
 
     // Función para cargar películas
@@ -234,15 +244,29 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
         // Simulamos un retardo de red
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        // Si hay customerId, filtramos las reservas existentes
-        if (customerId) {
-            const filteredBookings = bookings.filter(booking => booking.customerId === customerId);
-            // No actualizamos el estado global, solo devolvemos las reservas filtradas
-            return Promise.resolve();
-        }
+        // Recuperar reservas del localStorage
+        const savedBookings = localStorage.getItem('cinereservas_bookings');
 
-        // Si no hay localStorage o es la primera carga, creamos algunas reservas de ejemplo
-        if (bookings.length === 0) {
+        if (savedBookings) {
+            try {
+                const parsedBookings = JSON.parse(savedBookings);
+
+                // Si hay customerId, filtramos las reservas
+                if (customerId) {
+                    const filteredBookings = parsedBookings.filter((booking: Booking) =>
+                        booking.customerId === customerId);
+                    return; // Solo devolvemos las filtradas, no actualizamos el estado global
+                }
+
+                // Si no hay customerId, actualizamos todas las reservas
+                if (Array.isArray(parsedBookings)) {
+                    setBookings(parsedBookings);
+                }
+            } catch (error) {
+                console.error('Error al parsear las reservas guardadas:', error);
+            }
+        } else if (bookings.length === 0) {
+            // Si no hay localStorage o es la primera carga, creamos algunas reservas de ejemplo
             const mockBookings: Booking[] = [];
 
             // Generar algunas reservas de ejemplo
@@ -279,8 +303,10 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
             }
 
             setBookings(mockBookings);
+            // Guardar en localStorage
+            localStorage.setItem('cinereservas_bookings', JSON.stringify(mockBookings));
         }
-    }, [bookings]);
+    }, [bookings.length]);
 
     // Función para seleccionar una película
     const selectMovie = useCallback((movie: Movie | null) => {
@@ -346,12 +372,11 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
         await new Promise(resolve => setTimeout(resolve, 800));
 
         // Actualizar el estado
-        setBookings(prevBookings => {
-            const updatedBookings = [...prevBookings, ...newBookings];
-            // Guardar en localStorage
-            localStorage.setItem('cinereservas_bookings', JSON.stringify(updatedBookings));
-            return updatedBookings;
-        });
+        const updatedBookings = [...bookings, ...newBookings];
+        setBookings(updatedBookings);
+
+        // Guardar en localStorage
+        localStorage.setItem('cinereservas_bookings', JSON.stringify(updatedBookings));
 
         // Actualizar el estado de los asientos
         setSeats(prevSeats =>
@@ -374,14 +399,14 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
 
         if (booking) {
             // Actualizar el estado de la reserva
-            setBookings(prevBookings => {
-                const updatedBookings = prevBookings.map(b =>
-                    b.id === bookingId ? { ...b, status: false } : b
-                );
-                // Guardar en localStorage
-                localStorage.setItem('cinereservas_bookings', JSON.stringify(updatedBookings));
-                return updatedBookings;
-            });
+            const updatedBookings = bookings.map(b =>
+                b.id === bookingId ? { ...b, status: false } : b
+            );
+
+            setBookings(updatedBookings);
+
+            // Guardar en localStorage
+            localStorage.setItem('cinereservas_bookings', JSON.stringify(updatedBookings));
 
             // Actualizar el estado del asiento
             setSeats(prevSeats =>

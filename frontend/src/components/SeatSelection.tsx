@@ -104,9 +104,9 @@ const SeatSelection = () => {
         toggleSeatSelection,
         fetchSeats,
         createBooking,
+        fetchBookings,
         currentCustomer,
-        setCustomer,
-        fetchBookings
+        setCustomer
     } = useReservation();
 
     const [seatMap, setSeatMap] = useState<SeatData[]>([]);
@@ -286,7 +286,7 @@ const SeatSelection = () => {
             // Crear las reservas
             await createBooking(Number(billboardId), selectedSeats, customerData.id);
 
-            // Actualizar la lista de reservas
+            // Actualizar la lista de reservas - esto es crítico para que aparezcan en la lista de reservas
             await fetchBookings();
 
             setBookingSuccess(true);
