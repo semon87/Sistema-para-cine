@@ -165,7 +165,7 @@ Las contribuciones son bienvenidas. Para cambios importantes, abre primero un is
 
 ## 📄 Licencia
 
-Este proyecto está bajo licencia MIT. Consulta el archivo `[LICENSE](https://github.com/JC-DEV-EC/Sistema-para-cine/blob/main/LICENSE).`  para más detalles.
+Este proyecto está bajo licencia MIT. Consulta el archivo `LICENSE`[LICENSE](https://github.com/JC-DEV-EC/Sistema-para-cine/blob/main/LICENSE).  para más detalles.
 
 ## 📞 Contacto
 
