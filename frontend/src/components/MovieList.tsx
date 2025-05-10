@@ -10,6 +10,7 @@ import {
 import MovieCard from './MovieCard';
 import { useReservation } from '../context/ReservationContext';
 
+// Crear un componente Grid personalizado para evitar errores de tipado
 const Grid = (props: any) => <MuiGrid {...props} />;
 
 const movieDirectors: Record<string, string> = {
@@ -18,7 +19,13 @@ const movieDirectors: Record<string, string> = {
     'Amor en París': 'María González',
     'Superhéroes Unidos': 'Roberto Sánchez',
     'Risas Aseguradas': 'Laura Rodríguez',
-    'Terror en la Oscuridad': 'Daniel Murillo'
+    'Terror en la Oscuridad': 'Daniel Murillo',
+    'Mundos Paralelos': 'Gabriela Torres',
+    'El Código Secreto': 'Pablo Moreno',
+    'Fantasía Medieval': 'Elena Castro',
+    'La Gran Aventura': 'Luis Ramírez',
+    'Lazos Eternos': 'Marina Suárez',
+    'Melodías del Corazón': 'Alejandro Méndez'
 };
 
 const MovieList = () => {
@@ -79,20 +86,17 @@ const MovieList = () => {
                                 item
                                 xs={12}
                                 sm={6}
-                                md={4} // 3 columnas en md
+                                md={4}
                                 key={movie.id}
-                                sx={{ display: 'flex' }}
                             >
-                                <Box sx={{ flex: 1, display: 'flex' }}>
-                                    <MovieCard
-                                        id={movie.id}
-                                        title={movie.name}
-                                        duration={`${movie.lengthMinutes} minutos`}
-                                        genre={movie.genre}
-                                        director={movieDirectors[movie.name] || 'Director'}
-                                        image={`/api/placeholder/400/300`}
-                                    />
-                                </Box>
+                                <MovieCard
+                                    id={movie.id}
+                                    title={movie.name}
+                                    duration={`${movie.lengthMinutes} minutos`}
+                                    genre={movie.genre}
+                                    director={movieDirectors[movie.name] || 'Director'}
+                                    image={`/api/placeholder/400/300`}
+                                />
                             </Grid>
                         ))}
                     </Grid>

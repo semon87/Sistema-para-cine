@@ -39,9 +39,27 @@ const Navbar = () => {
     };
 
     const handleNavigation = (path: string) => {
-        navigate(path);
+        // Cerrar menús
         setMobileOpen(false);
         handleAdminMenuClose();
+
+        // Si el path contiene un hash (#), es una navegación a una sección
+        if (path.includes('#')) {
+            // Extraer el ID de sección del path
+            const sectionId = path.split('#')[1];
+
+            // Si estamos en la página principal, hacer scroll suave
+            if (window.location.pathname === '/' || window.location.pathname === '') {
+                const element = document.getElementById(sectionId);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+            }
+        }
+
+        // Si no se cumple lo anterior, navegar normalmente
+        navigate(path);
     };
 
     const navItems = [
@@ -121,8 +139,7 @@ const Navbar = () => {
                                     key={item.text}
                                     color="inherit"
                                     sx={{ mx: 1 }}
-                                    component={RouterLink}
-                                    to={item.path}
+                                    onClick={() => handleNavigation(item.path)}
                                 >
                                     {item.text}
                                 </Button>

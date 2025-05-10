@@ -105,7 +105,8 @@ const SeatSelection = () => {
         fetchSeats,
         createBooking,
         currentCustomer,
-        setCustomer
+        setCustomer,
+        fetchBookings
     } = useReservation();
 
     const [seatMap, setSeatMap] = useState<SeatData[]>([]);
@@ -243,10 +244,10 @@ const SeatSelection = () => {
         }
 
         if (!customerForm.age || customerForm.age < 1) {
-            errors.age = 'La edad debe ser mayor a 0'; // Convertido a cadena
+            errors.age = 'La edad debe ser mayor a 0';
         }
 
-        setFormErrors(errors); // Ahora compatible con el tipo esperado
+        setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
 
@@ -268,23 +269,25 @@ const SeatSelection = () => {
         try {
             setLoading(true);
 
-            // En una aplicación real, aquí se enviarían los datos del cliente y se crearía un nuevo cliente
-            // o se obtendría uno existente según su documento
-            const mockCustomerId = 1;
-
-            // Establecer cliente en el contexto
-            setCustomer({
-                id: mockCustomerId,
+            // Guardar o actualizar el cliente
+            const customerData = {
+                id: currentCustomer?.id || 1, // En una aplicación real, se generaría un ID
                 name: customerForm.name,
                 lastname: customerForm.lastname,
                 documentNumber: customerForm.documentNumber,
                 email: customerForm.email,
                 phoneNumber: customerForm.phoneNumber,
                 age: customerForm.age
-            });
+            };
+
+            // Establecer cliente en el contexto
+            setCustomer(customerData);
 
             // Crear las reservas
-            await createBooking(Number(billboardId), selectedSeats, mockCustomerId);
+            await createBooking(Number(billboardId), selectedSeats, customerData.id);
+
+            // Actualizar la lista de reservas
+            await fetchBookings();
 
             setBookingSuccess(true);
             setSnackbar({

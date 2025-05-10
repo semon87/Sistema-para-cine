@@ -33,7 +33,7 @@ export interface Billboard {
     movieName: string;
     roomId: number;
     roomName: string;
-    status: boolean; // Agregar esta propiedad
+    status: boolean;
 }
 
 export interface Customer {
@@ -106,6 +106,19 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
     const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
 
+    // Cargar datos del localStorage al inicio
+    useEffect(() => {
+        const savedBookings = localStorage.getItem('cinereservas_bookings');
+        if (savedBookings) {
+            setBookings(JSON.parse(savedBookings));
+        }
+    }, []);
+
+    // Guardar reservas en localStorage cuando cambien
+    useEffect(() => {
+        localStorage.setItem('cinereservas_bookings', JSON.stringify(bookings));
+    }, [bookings]);
+
     // Función para cargar películas
     const fetchMovies = useCallback(async (): Promise<void> => {
         // En una aplicación real, esto sería una llamada a la API
@@ -116,6 +129,13 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
             { id: 4, name: 'Superhéroes Unidos', genre: 'ACTION', allowedAge: 12, lengthMinutes: 140 },
             { id: 5, name: 'Risas Aseguradas', genre: 'COMEDY', allowedAge: 7, lengthMinutes: 90 },
             { id: 6, name: 'Terror en la Oscuridad', genre: 'HORROR', allowedAge: 18, lengthMinutes: 105 },
+            // Nuevas películas añadidas
+            { id: 7, name: 'Mundos Paralelos', genre: 'SCIENCE_FICTION', allowedAge: 12, lengthMinutes: 135 },
+            { id: 8, name: 'El Código Secreto', genre: 'THRILLER', allowedAge: 14, lengthMinutes: 118 },
+            { id: 9, name: 'Fantasía Medieval', genre: 'FANTASY', allowedAge: 10, lengthMinutes: 125 },
+            { id: 10, name: 'La Gran Aventura', genre: 'ADVENTURE', allowedAge: 7, lengthMinutes: 105 },
+            { id: 11, name: 'Lazos Eternos', genre: 'DRAMA', allowedAge: 13, lengthMinutes: 122 },
+            { id: 12, name: 'Melodías del Corazón', genre: 'MUSICALS', allowedAge: 7, lengthMinutes: 110 },
         ];
 
         // Simulamos un retardo de red
@@ -145,18 +165,18 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
         const today = date ? new Date(date) : new Date();
 
         const mockBillboards: Billboard[] = [];
-        const movieIds = [1, 2, 3, 4, 5, 6];
+        const movieIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // Incluimos las nuevas películas
         const roomIds = [1, 2, 3];
 
         // Generar carteleras para la fecha especificada
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 12; i++) { // Aumentamos el número de carteleras
             const movieId = movieIds[i % movieIds.length];
             const roomId = roomIds[i % roomIds.length];
             const movieName = movies.find(m => m.id === movieId)?.name || `Película ${movieId}`;
             const roomName = rooms.find(r => r.id === roomId)?.name || `Sala ${roomId}`;
 
             // Diferentes horarios
-            const startTimes = ['14:30', '17:00', '19:30', '22:00'];
+            const startTimes = ['12:00', '14:30', '17:00', '19:30', '22:00'];
             const startTime = startTimes[i % startTimes.length];
 
             // Calcular hora de fin (estimada)
@@ -211,46 +231,56 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
 
     // Función para cargar reservas
     const fetchBookings = useCallback(async (customerId?: number): Promise<void> => {
-        // En una aplicación real, esto sería una llamada a la API
-        const mockBookings: Booking[] = [];
+        // Simulamos un retardo de red
+        await new Promise(resolve => setTimeout(resolve, 300));
 
-        // Generar algunas reservas de ejemplo
-        for (let i = 1; i <= 10; i++) {
-            const date = new Date();
-            date.setDate(date.getDate() - Math.floor(Math.random() * 10));
-
-            const mockCustomerId = customerId || (Math.floor(Math.random() * 3) + 1);
-            const mockCustomerName = ['Juan Pérez', 'María González', 'Carlos Rodríguez'][mockCustomerId - 1];
-
-            const mockMovieId = Math.floor(Math.random() * 6) + 1;
-            const mockMovieName = movies.find(m => m.id === mockMovieId)?.name || 'Película Desconocida';
-
-            const mockRoomId = Math.floor(Math.random() * 3) + 1;
-            const mockRoomName = rooms.find(r => r.id === mockRoomId)?.name || 'Sala Desconocida';
-
-            // Generar una letra de fila (A-F) y un número de asiento (1-10)
-            const rowLetter = String.fromCharCode(65 + Math.floor(Math.random() * 6));
-            const seatNumber = Math.floor(Math.random() * 10) + 1;
-
-            mockBookings.push({
-                id: i,
-                date: date.toISOString().split('T')[0],
-                customerId: mockCustomerId,
-                customerName: mockCustomerName,
-                seatId: (rowLetter.charCodeAt(0) - 65) * 10 + seatNumber,
-                seatLabel: `${rowLetter}${seatNumber}`,
-                billboardId: Math.floor(Math.random() * 8) + 1,
-                movieName: mockMovieName,
-                roomName: mockRoomName,
-                status: Math.random() > 0.2 // 20% de reservas canceladas
-            });
+        // Si hay customerId, filtramos las reservas existentes
+        if (customerId) {
+            const filteredBookings = bookings.filter(booking => booking.customerId === customerId);
+            // No actualizamos el estado global, solo devolvemos las reservas filtradas
+            return Promise.resolve();
         }
 
-        // Simulamos un retardo de red
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Si no hay localStorage o es la primera carga, creamos algunas reservas de ejemplo
+        if (bookings.length === 0) {
+            const mockBookings: Booking[] = [];
 
-        setBookings(mockBookings);
-    }, [movies, rooms]);
+            // Generar algunas reservas de ejemplo
+            for (let i = 1; i <= 5; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - Math.floor(Math.random() * 10));
+
+                const mockCustomerId = Math.floor(Math.random() * 3) + 1;
+                const mockCustomerName = ['Juan Pérez', 'María González', 'Carlos Rodríguez'][mockCustomerId - 1];
+
+                const mockMovieId = Math.floor(Math.random() * 6) + 1;
+                const mockMovieName = ['Aventuras Cósmicas', 'El Misterio del Bosque', 'Amor en París',
+                    'Superhéroes Unidos', 'Risas Aseguradas', 'Terror en la Oscuridad'][mockMovieId - 1];
+
+                const mockRoomId = Math.floor(Math.random() * 3) + 1;
+                const mockRoomName = ['Sala Normal', 'Sala 3D', 'Sala VIP'][mockRoomId - 1];
+
+                // Generar una letra de fila (A-F) y un número de asiento (1-10)
+                const rowLetter = String.fromCharCode(65 + Math.floor(Math.random() * 6));
+                const seatNumber = Math.floor(Math.random() * 10) + 1;
+
+                mockBookings.push({
+                    id: i,
+                    date: date.toISOString().split('T')[0],
+                    customerId: mockCustomerId,
+                    customerName: mockCustomerName,
+                    seatId: (rowLetter.charCodeAt(0) - 65) * 10 + seatNumber,
+                    seatLabel: `${rowLetter}${seatNumber}`,
+                    billboardId: Math.floor(Math.random() * 8) + 1,
+                    movieName: mockMovieName,
+                    roomName: mockRoomName,
+                    status: Math.random() > 0.2 // 20% de reservas canceladas
+                });
+            }
+
+            setBookings(mockBookings);
+        }
+    }, [bookings]);
 
     // Función para seleccionar una película
     const selectMovie = useCallback((movie: Movie | null) => {
@@ -287,17 +317,16 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
         const newBookings: Booking[] = [];
 
         const billboard = billboards.find(b => b.id === billboardId);
-        let bookingId = bookings.length > 0 ? Math.max(...bookings.map(b => b.id)) : 0;
+        let bookingId = bookings.length > 0 ? Math.max(...bookings.map(b => b.id)) + 1 : 1;
 
         for (const seatId of seatIds) {
-            bookingId++;
             const seat = seats.find(s => s.id === seatId);
 
             if (billboard && seat) {
                 const rowLetter = String.fromCharCode(64 + seat.rowNumber);
 
                 const newBooking: Booking = {
-                    id: bookingId,
+                    id: bookingId++,
                     date: new Date().toISOString().split('T')[0],
                     customerId,
                     customerName: currentCustomer ? `${currentCustomer.name} ${currentCustomer.lastname}` : 'Cliente',
@@ -317,7 +346,12 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
         await new Promise(resolve => setTimeout(resolve, 800));
 
         // Actualizar el estado
-        setBookings(prevBookings => [...prevBookings, ...newBookings]);
+        setBookings(prevBookings => {
+            const updatedBookings = [...prevBookings, ...newBookings];
+            // Guardar en localStorage
+            localStorage.setItem('cinereservas_bookings', JSON.stringify(updatedBookings));
+            return updatedBookings;
+        });
 
         // Actualizar el estado de los asientos
         setSeats(prevSeats =>
@@ -326,8 +360,8 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
             )
         );
 
-        // Devolver el ID de la última reserva creada (útil si se crea solo una)
-        return bookingId;
+        // Devolver el ID de la última reserva creada
+        return bookingId - 1;
     }, [billboards, bookings, seats, currentCustomer]);
 
     // Función para cancelar una reserva
@@ -340,11 +374,14 @@ export const ReservationProvider: React.FC<ReservationProviderProps> = ({ childr
 
         if (booking) {
             // Actualizar el estado de la reserva
-            setBookings(prevBookings =>
-                prevBookings.map(b =>
+            setBookings(prevBookings => {
+                const updatedBookings = prevBookings.map(b =>
                     b.id === bookingId ? { ...b, status: false } : b
-                )
-            );
+                );
+                // Guardar en localStorage
+                localStorage.setItem('cinereservas_bookings', JSON.stringify(updatedBookings));
+                return updatedBookings;
+            });
 
             // Actualizar el estado del asiento
             setSeats(prevSeats =>

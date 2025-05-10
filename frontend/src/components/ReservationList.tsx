@@ -4,8 +4,8 @@ import {
     Box,
     Container,
     Typography,
-    Card,
-    CardContent,
+    //Card,
+    //CardContent,
     Button,
     Dialog,
     DialogTitle,
@@ -17,6 +17,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    TablePagination,
     Paper,
     IconButton,
     Alert,
@@ -41,7 +42,7 @@ import {
     Visibility as VisibilityIcon,
     Cancel as CancelIcon,
     Event as EventIcon,
-    AccessTime as AccessTimeIcon,
+    //AccessTime as AccessTimeIcon,
     Movie as MovieIcon,
     TheaterComedy as TheaterIcon,
     Person as PersonIcon,
@@ -81,6 +82,10 @@ const ReservationList = () => {
     });
     const [openFilterDialog, setOpenFilterDialog] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Estado para paginación
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     // Cargar reservas al inicio
     useEffect(() => {
@@ -142,6 +147,7 @@ const ReservationList = () => {
 
         setFilteredBookings(filtered);
         setOpenFilterDialog(false);
+        setPage(0); // Resetear a la primera página cuando se aplican filtros
     };
 
     // Resetear filtros
@@ -155,7 +161,24 @@ const ReservationList = () => {
         });
         setFilteredBookings(bookings);
         setOpenFilterDialog(false);
+        setPage(0); // Resetear a la primera página
     };
+
+    // Handlers para paginación
+    const handleChangePage = (event: unknown, newPage: number) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    // Obtener las reservas para la página actual
+    const currentPageBookings = filteredBookings.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+    );
 
     // Handlers
     const handleOpenDetailDialog = (reservation: any) => {
@@ -244,53 +267,66 @@ const ReservationList = () => {
                     <>
                         {/* Tabla de Reservas */}
                         {filteredBookings.length > 0 ? (
-                            <TableContainer component={Paper}>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>ID</TableCell>
-                                            <TableCell>Fecha</TableCell>
-                                            <TableCell>Cliente</TableCell>
-                                            <TableCell>Película</TableCell>
-                                            <TableCell>Sala</TableCell>
-                                            <TableCell>Butaca</TableCell>
-                                            <TableCell>Estado</TableCell>
-                                            <TableCell align="center">Acciones</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {filteredBookings.map((booking) => (
-                                            <TableRow key={booking.id} sx={{
-                                                backgroundColor: booking.status ? 'inherit' : 'rgba(239, 83, 80, 0.1)'
-                                            }}>
-                                                <TableCell>{booking.id}</TableCell>
-                                                <TableCell>{formatDate(booking.date)}</TableCell>
-                                                <TableCell>{booking.customerName}</TableCell>
-                                                <TableCell>{booking.movieName}</TableCell>
-                                                <TableCell>{booking.roomName}</TableCell>
-                                                <TableCell>{booking.seatLabel}</TableCell>
-                                                <TableCell>
-                                                    {booking.status ? (
-                                                        <Chip label="Activa" color="success" size="small" />
-                                                    ) : (
-                                                        <Chip label="Cancelada" color="error" size="small" />
-                                                    )}
-                                                </TableCell>
-                                                <TableCell align="center">
-                                                    <IconButton color="primary" onClick={() => handleOpenDetailDialog(booking)}>
-                                                        <VisibilityIcon />
-                                                    </IconButton>
-                                                    {booking.status && (
-                                                        <IconButton color="error" onClick={() => handleOpenCancelDialog(booking.id)}>
-                                                            <CancelIcon />
-                                                        </IconButton>
-                                                    )}
-                                                </TableCell>
+                            <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                                <TableContainer>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>ID</TableCell>
+                                                <TableCell>Fecha</TableCell>
+                                                <TableCell>Cliente</TableCell>
+                                                <TableCell>Película</TableCell>
+                                                <TableCell>Sala</TableCell>
+                                                <TableCell>Butaca</TableCell>
+                                                <TableCell>Estado</TableCell>
+                                                <TableCell align="center">Acciones</TableCell>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                        </TableHead>
+                                        <TableBody>
+                                            {currentPageBookings.map((booking) => (
+                                                <TableRow key={booking.id} sx={{
+                                                    backgroundColor: booking.status ? 'inherit' : 'rgba(239, 83, 80, 0.1)'
+                                                }}>
+                                                    <TableCell>{booking.id}</TableCell>
+                                                    <TableCell>{formatDate(booking.date)}</TableCell>
+                                                    <TableCell>{booking.customerName}</TableCell>
+                                                    <TableCell>{booking.movieName}</TableCell>
+                                                    <TableCell>{booking.roomName}</TableCell>
+                                                    <TableCell>{booking.seatLabel}</TableCell>
+                                                    <TableCell>
+                                                        {booking.status ? (
+                                                            <Chip label="Activa" color="success" size="small" />
+                                                        ) : (
+                                                            <Chip label="Cancelada" color="error" size="small" />
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <IconButton color="primary" onClick={() => handleOpenDetailDialog(booking)}>
+                                                            <VisibilityIcon />
+                                                        </IconButton>
+                                                        {booking.status && (
+                                                            <IconButton color="error" onClick={() => handleOpenCancelDialog(booking.id)}>
+                                                                <CancelIcon />
+                                                            </IconButton>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                                <TablePagination
+                                    rowsPerPageOptions={[5, 10, 25]}
+                                    component="div"
+                                    count={filteredBookings.length}
+                                    rowsPerPage={rowsPerPage}
+                                    page={page}
+                                    onPageChange={handleChangePage}
+                                    onRowsPerPageChange={handleChangeRowsPerPage}
+                                    labelRowsPerPage="Filas por página"
+                                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+                                />
+                            </Paper>
                         ) : (
                             <Alert severity="info">
                                 No se encontraron reservas con los criterios seleccionados

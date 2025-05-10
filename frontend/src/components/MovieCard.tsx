@@ -7,7 +7,6 @@ import {
     CardContent,
     Typography,
     Button,
-    Box,
     Stack,
 } from '@mui/material';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
@@ -39,6 +38,7 @@ const MovieCard = ({ id, title, duration, genre, director, image }: MovieCardPro
         'DRAMA': 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?q=80&w=1200&h=400&auto=format&fit=crop', // Teatro
         'FANTASY': 'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?q=80&w=1200&h=400&auto=format&fit=crop', // Dragón
         'ADVENTURE': 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1200&h=400&auto=format&fit=crop', // Montañas
+        'MUSICALS': 'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?q=80&w=1200&h=400&auto=format&fit=crop', // Música
     };
 
     // Determinar la imagen basada en el género, o usar una predeterminada
@@ -54,7 +54,8 @@ const MovieCard = ({ id, title, duration, genre, director, image }: MovieCardPro
                 '&:hover': {
                     transform: 'translateY(-5px)',
                     boxShadow: (theme) => theme.shadows[8],
-                }
+                },
+                maxWidth: '100%'
             }}
         >
             <CardMedia

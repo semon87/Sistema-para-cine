@@ -73,6 +73,13 @@ const AdminButaca = () => {
         severity: 'success' as 'success' | 'error'
     });
     const [loading, setLoading] = useState(true);
+    const [confirmDialog, setConfirmDialog] = useState({
+        open: false,
+        title: '',
+        message: '',
+        id: 0,
+        action: '' as 'delete' | 'toggle'
+    });
 
     // Cargar salas al iniciar
     useEffect(() => {
@@ -153,9 +160,51 @@ const AdminButaca = () => {
         });
     };
 
+    const handleOpenConfirmDialog = (id: number, action: 'delete' | 'toggle') => {
+        const title = action === 'delete' ? 'Eliminar Butaca' : 'Cambiar Estado de Butaca';
+        const message = action === 'delete'
+            ? '¿Está seguro de que desea eliminar esta butaca? Esta acción no se puede deshacer.'
+            : '¿Está seguro de que desea cambiar el estado de esta butaca?';
+
+        setConfirmDialog({
+            open: true,
+            title,
+            message,
+            id,
+            action
+        });
+    };
+
+    const handleCloseConfirmDialog = () => {
+        setConfirmDialog({
+            ...confirmDialog,
+            open: false
+        });
+    };
+
+    const handleConfirmAction = () => {
+        if (confirmDialog.action === 'delete') {
+            handleDelete(confirmDialog.id);
+        } else {
+            handleToggleStatus(confirmDialog.id);
+        }
+        handleCloseConfirmDialog();
+    };
+
     const handleSubmit = async () => {
         try {
             setLoading(true);
+
+            // Agregar validaciones básicas
+            if (currentSeat.number <= 0 || currentSeat.rowNumber <= 0 || !currentSeat.roomId) {
+                setSnackbar({
+                    open: true,
+                    message: 'Por favor, complete todos los campos correctamente',
+                    severity: 'error'
+                });
+                setLoading(false);
+                return;
+            }
 
             // En una aplicación real, aquí se enviaría la información a la API
             const message = isEditing
@@ -163,9 +212,34 @@ const AdminButaca = () => {
                 : 'Butaca creada correctamente';
 
             // Simulamos la actualización local
-            // En una aplicación real, después de la respuesta exitosa de la API,
-            // se refrescarían los datos con fetchSeats
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simular retardo de red
+            if (isEditing) {
+                // Actualizar butaca existente
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const updatedSeats = seats.map(seat =>
+                    seat.id === currentSeat.id
+                        ? {
+                            ...seat,
+                            number: currentSeat.number,
+                            rowNumber: currentSeat.rowNumber,
+                            roomId: currentSeat.roomId
+                        }
+                        : seat
+                );
+                // En un caso real, aquí se enviaría la actualización al servidor y luego se refrescarían los datos
+            } else {
+                // Crear nueva butaca
+                const newId = seats.length > 0 ? Math.max(...seats.map(s => s.id)) + 1 : 1;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const newSeat = {
+                    ...currentSeat,
+                    id: newId
+                };
+                // En un caso real, aquí se enviaría la nueva butaca al servidor y luego se refrescarían los datos
+            }
+
+            // Simular retardo de red y refrescar datos
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await fetchSeats(currentSeat.roomId);
 
             setSnackbar({
                 open: true,
@@ -191,7 +265,18 @@ const AdminButaca = () => {
             setLoading(true);
 
             // En una aplicación real, aquí se enviaría la eliminación a la API
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simular retardo de red
+            // Simulamos eliminación local
+            const seatToDelete = seats.find(seat => seat.id === id);
+
+            if (!seatToDelete) {
+                throw new Error('Butaca no encontrada');
+            }
+
+            // Simulamos retardo de red
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Recargar los asientos (en una app real, esto se haría después de la respuesta exitosa de la API)
+            await fetchSeats(selectedRoom!);
 
             setSnackbar({
                 open: true,
@@ -216,9 +301,25 @@ const AdminButaca = () => {
 
             // En una aplicación real, aquí se enviaría la actualización a la API
             const targetSeat = seats.find(seat => seat.id === id);
-            const action = targetSeat?.status ? 'deshabilitada' : 'habilitada';
 
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simular retardo de red
+            if (!targetSeat) {
+                throw new Error('Butaca no encontrada');
+            }
+
+            const newStatus = !targetSeat.status;
+            const action = newStatus ? 'habilitada' : 'deshabilitada';
+
+            // Simulamos la actualización local
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const updatedSeats = seats.map(seat =>
+                seat.id === id ? { ...seat, status: newStatus } : seat
+            );
+
+            // Simulamos retardo de red
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Recargar los asientos (en una app real, esto se haría después de la respuesta exitosa de la API)
+            await fetchSeats(selectedRoom!);
 
             setSnackbar({
                 open: true,
@@ -315,7 +416,7 @@ const AdminButaca = () => {
                                                 <TableCell>{seat.id}</TableCell>
                                                 <TableCell>{String.fromCharCode(64 + seat.rowNumber)}</TableCell>
                                                 <TableCell>{seat.number}</TableCell>
-                                                <TableCell>{seat.roomId}</TableCell>
+                                                <TableCell>{selectedRoom}</TableCell>
                                                 <TableCell>
                                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                         {seat.status ? (
@@ -335,12 +436,12 @@ const AdminButaca = () => {
                                                     <IconButton color="primary" onClick={() => handleOpenDialog(seat)}>
                                                         <EditIcon />
                                                     </IconButton>
-                                                    <IconButton color="error" onClick={() => handleDelete(seat.id)}>
+                                                    <IconButton color="error" onClick={() => handleOpenConfirmDialog(seat.id, 'delete')}>
                                                         <DeleteIcon />
                                                     </IconButton>
                                                     <IconButton
                                                         color={seat.status ? "warning" : "success"}
-                                                        onClick={() => handleToggleStatus(seat.id)}
+                                                        onClick={() => handleOpenConfirmDialog(seat.id, 'toggle')}
                                                     >
                                                         <EventSeatIcon />
                                                     </IconButton>
@@ -427,6 +528,27 @@ const AdminButaca = () => {
                         }
                     >
                         {isEditing ? 'Actualizar' : 'Crear'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Diálogo de Confirmación */}
+            <Dialog open={confirmDialog.open} onClose={handleCloseConfirmDialog}>
+                <DialogTitle>{confirmDialog.title}</DialogTitle>
+                <DialogContent>
+                    <Typography>{confirmDialog.message}</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseConfirmDialog} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleConfirmAction}
+                        color="error"
+                        variant="contained"
+                        disabled={loading}
+                    >
+                        Confirmar
                     </Button>
                 </DialogActions>
             </Dialog>
