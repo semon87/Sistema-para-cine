@@ -1,179 +1,129 @@
-# CineReservas - Sistema de Reservas para Cine
+# 🎬 Sistema para Cine
 
-![CineReservas Banner](https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200&h=400&auto=format&fit=crop)
+![Sistema para Cine](https://img.shields.io/badge/Sistema_para_Cine-v1.0-blue)
 
-## 📝 Descripción
+CineReservas es un sistema completo de gestión y reserva de entradas para cines. Permite a los usuarios ver la cartelera, seleccionar películas, elegir asientos y gestionar sus reservas. Este sistema está compuesto por un backend desarrollado en Spring Boot con Java y un frontend moderno creado con React, TypeScript y Material UI.
 
-CineReservas es un sistema completo de gestión y reserva de entradas para cines que permite a los usuarios ver la cartelera, seleccionar películas, elegir asientos y gestionar sus reservas. El sistema está compuesto por un backend desarrollado en Spring Boot con Java y un frontend moderno creado con React, TypeScript y Material UI.
+## 📚 Tabla de Contenidos
 
-## ✨ Características Principales
+- [Características](#-características)
+- [Tecnologías Utilizadas](#-tecnologías-utilizadas)
+- [Instalación](#-instalación)
+- [Uso](#-uso)
+- [Contribución](#-contribución)
+- [Licencia](#-licencia)
+- [Enlaces](#-enlaces)
 
-- **Gestión de Películas**: Catálogo completo con información detallada
-- **Cartelera Dinámica**: Visualización de funciones por día, sala y género
-- **Selección de Asientos**: Sistema interactivo para elegir asientos
-- **Reservas en Tiempo Real**: Proceso de reserva fácil e intuitivo
-- **Panel de Administración**: Gestión de salas, butacas y funciones
-- **Diseño Responsive**: Experiencia óptima en todos los dispositivos
+## ⭐ Características
 
-## 🛠️ Tecnologías
+- **Visualización de Cartelera**: Los usuarios pueden ver todas las películas disponibles en el cine.
+- **Selección de Películas**: Permite a los usuarios seleccionar una película específica para obtener más detalles.
+- **Elección de Asientos**: Los usuarios pueden elegir sus asientos preferidos antes de realizar la reserva.
+- **Gestión de Reservas**: Los usuarios pueden gestionar sus reservas, incluyendo la posibilidad de cancelar o modificar.
+- **Interfaz Intuitiva**: La interfaz es fácil de usar, diseñada para una experiencia fluida.
 
-### Backend
-- **Java 17**
-- **Spring Boot 3.4.5**
-- **Spring Security**
-- **Spring Data JPA**
-- **PostgreSQL**
-- **Maven**
-- **Lombok**
+## ⚙️ Tecnologías Utilizadas
 
-### Frontend
-- **React 19**
-- **TypeScript**
-- **Material UI 7**
-- **React Router DOM 7**
-- **Axios**
-- **Date-fns**
+Este proyecto utiliza varias tecnologías modernas para ofrecer una experiencia robusta y eficiente:
 
-## 📋 Requisitos Previos
+- **Backend**: 
+  - Spring Boot
+  - Java 17
+  - Spring Data JPA
+  - Spring Security
+  - Lombok
+  - PostgreSQL
 
-Para ejecutar el proyecto necesitarás:
+- **Frontend**:
+  - React 19
+  - TypeScript
+  - Material UI
+  - React Router DOM 7
+  - Axios
+  - date-fns
 
-- JDK 17+
-- Node.js 18+
-- npm o yarn
-- PostgreSQL 14+
+## 🛠️ Instalación
 
-## 🚀 Instalación y Configuración
+Para instalar y ejecutar el sistema, sigue estos pasos:
 
-### Base de Datos
-1. Crea una base de datos PostgreSQL llamada `cinereservas`
-2. El script inicial se encuentra en `backend/src/main/resources/db/init.sql`
-
-### Backend
-1. Navega a la carpeta del backend:
+1. **Clona el repositorio**:
    ```bash
-   cd backend
+   git clone https://github.com/semon87/Sistema-para-cine.git
    ```
 
-2. Copia y modifica el archivo de propiedades (si es necesario):
+2. **Navega a la carpeta del proyecto**:
    ```bash
-   # El archivo está en src/main/resources/application.properties
-   # Configura la conexión a la base de datos según tu entorno
+   cd Sistema-para-cine
    ```
 
-3. Compila y ejecuta la aplicación:
+3. **Configura el backend**:
+   - Asegúrate de tener Java 17 y Maven instalados.
+   - Configura la base de datos PostgreSQL y actualiza el archivo `application.properties` con tus credenciales.
+
+4. **Ejecuta el backend**:
    ```bash
-   ./mvnw spring-boot:run
-   ```
-   
-   En Windows:
-   ```bash
-   mvnw.cmd spring-boot:run
+   mvn spring-boot:run
    ```
 
-### Frontend
-1. Navega a la carpeta del frontend:
+5. **Configura el frontend**:
+   - Navega a la carpeta del frontend.
    ```bash
    cd frontend
    ```
 
-2. Instala las dependencias:
+6. **Instala las dependencias**:
    ```bash
    npm install
-   # o
-   yarn install
    ```
 
-3. Inicia la aplicación:
+7. **Ejecuta el frontend**:
    ```bash
    npm start
-   # o
-   yarn start
    ```
 
-4. Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+## 🖥️ Uso
 
-## 📱 Uso del Sistema
+Una vez que el sistema esté en funcionamiento, puedes acceder a la aplicación en tu navegador en `http://localhost:3000`. Desde allí, podrás explorar la cartelera, seleccionar películas y realizar reservas.
 
-### Flujo de Usuario
-1. Explora la cartelera de películas
-2. Selecciona una película para ver detalles
-3. Elige una función (fecha y hora)
-4. Selecciona asientos disponibles
-5. Introduce tus datos personales
-6. Confirma la reserva
-7. Gestiona tus reservas desde la sección "Mis Reservas"
+### Ejemplo de Flujo de Usuario
 
-### Panel de Administración
-1. Accede a las secciones de administración
-2. Gestiona la cartelera de funciones
-3. Administra salas y butacas
-4. Visualiza y edita reservas
+1. **Visitar la Cartelera**: Al abrir la aplicación, verás la lista de películas en cartelera.
+2. **Seleccionar una Película**: Haz clic en una película para ver más detalles.
+3. **Elegir Asientos**: Selecciona tus asientos preferidos en la interfaz.
+4. **Realizar Reserva**: Completa el proceso de reserva ingresando tus datos.
 
-## 📂 Estructura del Proyecto
+## 🤝 Contribución
 
-```
-cinereservas/
-├── backend/               # API REST con Spring Boot
-│   ├── src/main/java/     # Código fuente Java
-│   ├── src/main/resources/ # Recursos y configuraciones
-│   └── pom.xml            # Dependencias Maven
-│
-└── frontend/              # Cliente web con React
-    ├── public/            # Archivos estáticos
-    ├── src/               # Código fuente React/TypeScript
-    │   ├── components/    # Componentes React
-    │   ├── context/       # Context API
-    │   ├── services/      # Servicios para la API
-    │   └── App.tsx        # Componente principal
-    ├── package.json       # Dependencias NPM
-    └── tsconfig.json      # Configuración TypeScript
-```
+Las contribuciones son bienvenidas. Si deseas contribuir al proyecto, sigue estos pasos:
 
-## 🧪 Pruebas
+1. **Fork el repositorio**.
+2. **Crea una nueva rama**:
+   ```bash
+   git checkout -b feature/nueva-caracteristica
+   ```
 
-### Backend
-```bash
-cd backend
-./mvnw test
-```
+3. **Realiza tus cambios y haz commit**:
+   ```bash
+   git commit -m "Añadir nueva característica"
+   ```
 
-### Frontend
-```bash
-cd frontend
-npm test
-# o
-yarn test
-```
+4. **Envía tus cambios**:
+   ```bash
+   git push origin feature/nueva-caracteristica
+   ```
 
-## 🔧 Endpoints API
-
-El backend expone los siguientes endpoints principales:
-
-- **Películas**: `/api/movies`
-- **Salas**: `/api/rooms`
-- **Butacas**: `/api/seats`
-- **Cartelera**: `/api/billboards`
-- **Clientes**: `/api/customers`
-- **Reservas**: `/api/bookings`
-
-Para más detalles, consulta la documentación completa de la API en `http://localhost:8080/swagger-ui.html` cuando el backend esté en ejecución.
-
-## 👥 Contribuciones
-
-Las contribuciones son bienvenidas. Para cambios importantes, abre primero un issue para discutir lo que te gustaría cambiar.
+5. **Crea un Pull Request**.
 
 ## 📄 Licencia
 
-Este proyecto está bajo licencia MIT. Consulta el archivo [LICENSE](https://github.com/JC-DEV-EC/Sistema-para-cine/blob/main/LICENSE).  para más detalles.
+Este proyecto está bajo la Licencia MIT. Para más detalles, consulta el archivo `LICENSE`.
 
-## 📞 Contacto
+## 🔗 Enlaces
 
-Para cualquier consulta o sugerencia, puedes contactarme a través de:
+Para descargar la última versión del sistema, visita la sección de [Releases](https://github.com/semon87/Sistema-para-cine/releases). Aquí encontrarás los archivos necesarios para ejecutar el sistema.
 
-- GitHub: [JC-DEV-EC](https://github.com/JC-DEV-EC)
-- Email: [jassergerardoc@gmail.com]
+Si tienes preguntas o necesitas más información, revisa la sección de [Releases](https://github.com/semon87/Sistema-para-cine/releases) para obtener actualizaciones y versiones anteriores.
 
 ---
 
-Desarrollado con ❤️ por [JC-DEV-EC]
+¡Gracias por tu interés en Sistema para Cine! Esperamos que disfrutes usando esta aplicación y que facilite tu experiencia en el cine.
